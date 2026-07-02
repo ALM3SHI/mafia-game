@@ -1,0 +1,93 @@
+# ============================================================
+# Mafia Game - Comprehensive .gitignore
+# ============================================================
+
+# ── Dependencies ─────────────────────────────────────────────
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ── Python Virtual Environments ──────────────────────────────
+**/venv/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+*.egg
+
+# ── Next.js ──────────────────────────────────────────────────
+/.next/
+/out/
+
+# ── Production Build ─────────────────────────────────────────
+/build
+
+# ── Testing ──────────────────────────────────────────────────
+/coverage
+
+# ── Environment Variables ────────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+game_backend/.env
+
+# ── IDE / Editor ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
+
+# ── OS Files ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Debug Logs ───────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+install_log.txt
+
+# ── Vercel ───────────────────────────────────────────────────
+.vercel
+
+# ── TypeScript ───────────────────────────────────────────────
+*.tsbuildinfo
+next-env.d.ts
+
+# ── Large Binary Files (not for Git) ────────────────────────
+*.gguf
+*.bin
+*.safetensors
+
+# ── Audio / Media Samples (keep only essential ones) ────────
+input.wav
+ai_poc/input.wav
+ai_poc/output.mp3
+game_backend/voice_sample.m4a
+game_backend/voice_sample.wav
+game_backend/voice_sample_5s.wav
+
+# ── Cache / Generated Data ──────────────────────────────────
+game_backend/data/tts_cache/
+game_backend/data/clones/
+
+# ── Legacy Archives ─────────────────────────────────────────
+legacy_dir/*.zip
+legacy_dir/*.html
+
+# ── Misc ─────────────────────────────────────────────────────
+*.pem
+CLAUDE.md

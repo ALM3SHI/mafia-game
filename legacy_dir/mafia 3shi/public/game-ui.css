@@ -1,0 +1,1248 @@
+/* ╔════════════════════════════════════════════════════════════════════════╗
+   ║          MAFIA-3SHI GAME UI CSS FRAMEWORK - PREMIUM EDITION            ║
+   ║  Dark Casino/Theatrical Theme with Immersive Overlay Styling          ║
+   ╚════════════════════════════════════════════════════════════════════════╝ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 1: UTILITY MIXINS & REUSABLE EFFECTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* --- Emboss Effect Base: Raised 3D appearance with inset shadows --- */
+.emboss {
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.5),
+        0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* --- Metal Plate Effect: Beveled metallic appearance --- */
+.metal {
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.08) 0%, 
+        rgba(255, 255, 255, 0.02) 50%, 
+        rgba(0, 0, 0, 0.1) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* --- Felt Texture Base: Casino table effect --- */
+.felt {
+    background: 
+        repeating-linear-gradient(90deg, 
+            transparent, 
+            transparent 2px, 
+            rgba(0, 0, 0, 0.1) 2px, 
+            rgba(0, 0, 0, 0.1) 4px),
+        repeating-linear-gradient(0deg, 
+            transparent, 
+            transparent 2px, 
+            rgba(0, 0, 0, 0.08) 2px, 
+            rgba(0, 0, 0, 0.08) 4px);
+}
+
+/* --- Deep Glow Effect: Ethereal ambient glow --- */
+.glow {
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3));
+    transition: filter 0.3s ease;
+}
+
+.glow:hover {
+    filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.5));
+}
+
+/* --- Glass-morphism: Frosted glass effect --- */
+.glass {
+    background: rgba(20, 20, 42, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Text Glow Utilities --- */
+.text-glow {
+    text-shadow: 
+        0 0 10px rgba(255, 215, 0, 0.4),
+        0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.text-glow-primary {
+    text-shadow: 
+        0 0 10px rgba(230, 57, 70, 0.5),
+        0 0 20px rgba(230, 57, 70, 0.3);
+}
+
+.text-glow-secondary {
+    text-shadow: 
+        0 0 10px rgba(46, 196, 182, 0.5),
+        0 0 20px rgba(46, 196, 182, 0.3);
+}
+
+/* --- Inset Shadow for Depth --- */
+.inset-shadow {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 2: BACKGROUNDS & ATMOSPHERE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Green Casino Felt Table Background */
+.casino-felt-green {
+    background-color: #1a4d2e;
+    background-image: 
+        repeating-linear-gradient(0deg, 
+            transparent, 
+            transparent 2px, 
+            rgba(0, 0, 0, 0.2) 2px, 
+            rgba(0, 0, 0, 0.2) 4px),
+        repeating-linear-gradient(90deg, 
+            transparent, 
+            transparent 2px, 
+            rgba(0, 0, 0, 0.15) 2px, 
+            rgba(0, 0, 0, 0.15) 4px);
+    position: relative;
+    overflow: hidden;
+}
+
+.casino-felt-green::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+        radial-gradient(circle at 30% 30%, 
+            rgba(255, 255, 255, 0.05) 0%, 
+            transparent 50%);
+    pointer-events: none;
+}
+
+/* Burgundy Casino Felt Table Background */
+.casino-felt-burgundy {
+    background-color: #5c2e3a;
+    background-image: 
+        repeating-linear-gradient(0deg, 
+            transparent, 
+            transparent 2px, 
+            rgba(0, 0, 0, 0.3) 2px, 
+            rgba(0, 0, 0, 0.3) 4px),
+        repeating-linear-gradient(90deg, 
+            transparent, 
+            transparent 2px, 
+            rgba(0, 0, 0, 0.25) 2px, 
+            rgba(0, 0, 0, 0.25) 4px);
+    position: relative;
+    overflow: hidden;
+}
+
+.casino-felt-burgundy::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+        radial-gradient(circle at 70% 70%, 
+            rgba(255, 215, 0, 0.03) 0%, 
+            transparent 50%);
+    pointer-events: none;
+}
+
+/* Vignette Overlay: Darkened edges with spotlight effect */
+.vignette {
+    position: relative;
+    overflow: hidden;
+}
+
+.vignette::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+        radial-gradient(ellipse at center, 
+            transparent 0%, 
+            rgba(0, 0, 0, 0.4) 70%, 
+            rgba(0, 0, 0, 0.7) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Floating Particle Atmosphere Animation */
+.particles-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 50%;
+    animation: float 20s infinite ease-in-out;
+}
+
+.particle:nth-child(1) { 
+    width: 20px; height: 20px; 
+    top: 10%; left: 10%; 
+    animation-delay: 0s;
+}
+
+.particle:nth-child(2) { 
+    width: 30px; height: 30px; 
+    top: 20%; right: 15%; 
+    animation-delay: 2s;
+}
+
+.particle:nth-child(3) { 
+    width: 15px; height: 15px; 
+    bottom: 20%; left: 20%; 
+    animation-delay: 4s;
+}
+
+.particle:nth-child(4) { 
+    width: 25px; height: 25px; 
+    top: 50%; right: 10%; 
+    animation-delay: 6s;
+}
+
+.particle:nth-child(5) { 
+    width: 18px; height: 18px; 
+    bottom: 30%; right: 30%; 
+    animation-delay: 8s;
+}
+
+@keyframes float {
+    0%, 100% { 
+        transform: translateY(0) translateX(0);
+        opacity: 0.1;
+    }
+    50% { 
+        transform: translateY(-40px) translateX(20px);
+        opacity: 0.3;
+    }
+}
+
+/* Semi-Transparent Card Background with Inner Shadow */
+.casino-card-bg {
+    background: rgba(20, 20, 42, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+        0 8px 32px rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius);
+}
+
+/* Gradient Overlay for Depth */
+.gradient-overlay {
+    position: relative;
+}
+
+.gradient-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 215, 0, 0.05) 0%, 
+        rgba(230, 57, 70, 0.05) 100%);
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 3: FORM INPUTS & CONTROLS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Metal-Plate Styled Input Fields */
+.game-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: var(--radius-sm);
+    background: linear-gradient(180deg, 
+        rgba(20, 20, 42, 0.8) 0%, 
+        rgba(10, 10, 18, 0.9) 100%);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.5),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.05);
+}
+
+.game-input::placeholder {
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+/* Focus State with Glow and Color Change */
+.game-input:focus {
+    outline: none;
+    border-color: var(--gold);
+    background: linear-gradient(180deg, 
+        rgba(30, 30, 58, 0.9) 0%, 
+        rgba(20, 20, 42, 0.95) 100%);
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.5),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.08),
+        0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+/* Disabled Input State */
+.game-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: rgba(255, 215, 0, 0.1);
+    background: linear-gradient(180deg, 
+        rgba(15, 15, 25, 0.6) 0%, 
+        rgba(10, 10, 18, 0.7) 100%);
+}
+
+/* Input Label Styling */
+.game-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--gold);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Input Container */
+.game-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 4: GAME BUTTONS - EMBOSSED 3D EFFECT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base Game Button: Embossed with 3D depth */
+.game-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border: 2px solid;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* 3D Embossed Effect */
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.3),
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+    
+    transform: translateY(-2px);
+}
+
+/* Shine overlay on button */
+.game-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        transparent 50%);
+    pointer-events: none;
+}
+
+/* Press/Active Animation */
+.game-btn:active {
+    transform: translateY(0);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.game-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* --- PRIMARY BUTTON: Red/Mafia --- */
+.game-btn-primary {
+    background: linear-gradient(180deg, #ff4e5f 0%, #e63946 100%);
+    border-color: #a30820;
+    color: white;
+}
+
+.game-btn-primary:hover {
+    filter: drop-shadow(0 0 12px rgba(230, 57, 70, 0.6));
+    background: linear-gradient(180deg, #ff6a7d 0%, #f04f5a 100%);
+}
+
+.game-btn-primary:focus {
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.3),
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 24px rgba(230, 57, 70, 0.5);
+}
+
+/* --- SECONDARY BUTTON: Cyan/Citizen --- */
+.game-btn-secondary {
+    background: linear-gradient(180deg, #4fc3d1 0%, #2ec4b6 100%);
+    border-color: #1a7f7e;
+    color: white;
+}
+
+.game-btn-secondary:hover {
+    filter: drop-shadow(0 0 12px rgba(46, 196, 182, 0.6));
+    background: linear-gradient(180deg, #63d4d9 0%, #42d5c3 100%);
+}
+
+.game-btn-secondary:focus {
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.3),
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 24px rgba(46, 196, 182, 0.5);
+}
+
+/* --- DANGER BUTTON: Warning Red --- */
+.game-btn-danger {
+    background: linear-gradient(180deg, #ff5c6f 0%, #d1293c 100%);
+    border-color: #8b0000;
+    color: white;
+}
+
+.game-btn-danger:hover {
+    filter: drop-shadow(0 0 12px rgba(209, 41, 60, 0.6));
+    background: linear-gradient(180deg, #ff7a8f 0%, #e6404e 100%);
+}
+
+/* --- SUCCESS BUTTON: Green --- */
+.game-btn-success {
+    background: linear-gradient(180deg, #2ec4b6 0%, #1a8a7d 100%);
+    border-color: #0d5a54;
+    color: white;
+}
+
+.game-btn-success:hover {
+    filter: drop-shadow(0 0 12px rgba(46, 196, 182, 0.6));
+    background: linear-gradient(180deg, #42d5c3 0%, #2ed4b8 100%);
+}
+
+/* --- GOLD/ACCENT BUTTON: Casino Special --- */
+.game-btn-gold {
+    background: linear-gradient(180deg, #ffd700 0%, #daa520 100%);
+    border-color: #b8860b;
+    color: #0a0a12;
+    font-weight: 800;
+}
+
+.game-btn-gold:hover {
+    filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.7));
+    background: linear-gradient(180deg, #ffe44d 0%, #ffd700 100%);
+}
+
+/* --- GHOST BUTTON: Transparent Outline --- */
+.game-btn-ghost {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 215, 0, 0.5);
+    color: var(--gold);
+}
+
+.game-btn-ghost:hover {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: var(--gold);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.3),
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 16px rgba(255, 215, 0, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 5: ORNAMENTAL PANELS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Ornamental Panel Container */
+.game-panel {
+    background: rgba(20, 20, 42, 0.7);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255, 215, 0, 0.25);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 12px 32px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Panel Header with Gold Gradient Text */
+.game-panel-header {
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3));
+}
+
+/* Panel Body */
+.game-panel-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-dim);
+}
+
+/* Corner Decorations: Ornate brass-style corners */
+.game-panel::before,
+.game-panel::after {
+    content: '';
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--gold);
+}
+
+.game-panel::before {
+    top: -2px;
+    left: -2px;
+    border-right: none;
+    border-bottom: none;
+    border-radius: 0 0 8px 0;
+}
+
+.game-panel::after {
+    bottom: -2px;
+    right: -2px;
+    border-left: none;
+    border-top: none;
+    border-radius: 8px 0 0 0;
+}
+
+/* Additional corner decorations */
+.game-panel-corner-tl {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--gold);
+    border-left: none;
+    border-bottom: none;
+    border-radius: 0 0 0 8px;
+}
+
+.game-panel-corner-br {
+    position: absolute;
+    bottom: -2px;
+    left: -2px;
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--gold);
+    border-right: none;
+    border-top: none;
+    border-radius: 0 8px 0 0;
+}
+
+/* Flourish Line Accent */
+.game-panel-flourish {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        var(--gold), 
+        transparent);
+    margin: 12px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 6: ROOM CODE DISPLAY - SCRABBLE TILES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Room Code Container */
+.game-room-code {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    margin: 16px 0;
+    margin-bottom: 16px;
+    padding: 16px;
+}
+
+/* Individual Room Code Tile */
+.game-code-tile {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Scrabble-tile styling */
+    background: linear-gradient(135deg, #f5e6d3 0%, #e8d7c3 100%);
+    border: 2px solid #d4a574;
+    border-radius: 4px;
+    
+    /* Typography */
+    font-size: 24px;
+    font-weight: 800;
+    color: #2c1810;
+    font-family: 'Georgia', serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    
+    /* 3D Effect */
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+        0 3px 8px rgba(0, 0, 0, 0.3);
+    
+    transition: all 0.3s ease;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Raised tile appearance on hover/interaction */
+.game-code-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+        0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Point value (small number in corner) - optional */
+.game-code-tile::after {
+    content: attr(data-points);
+    position: absolute;
+    bottom: 2px;
+    right: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #a67c52;
+    opacity: 0.6;
+}
+
+/* Room Code Label */
+.game-room-code-label {
+    text-align: center;
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 7: PLAYER ROWS - METAL NAMEPLATE STYLING
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Player Row Container */
+.game-player-row {
+    display: grid;
+    grid-template-columns: 1fr 140px 120px 100px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(20, 20, 42, 0.5);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: var(--radius-sm);
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+
+.game-player-row:hover {
+    background: rgba(20, 20, 42, 0.7);
+    border-color: rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
+}
+
+/* Metal Nameplate Styling */
+.game-nameplate {
+    background: linear-gradient(180deg, 
+        rgba(180, 160, 130, 0.8) 0%, 
+        rgba(140, 120, 90, 0.9) 100%);
+    border: 2px solid #8b7355;
+    border-radius: 6px;
+    padding: 8px 12px;
+    
+    /* Beveled Metal Effect */
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.3);
+    
+    /* Engraved Text */
+    color: #1a1410;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Player Role Badge */
+.game-role-mafia {
+    background: linear-gradient(135deg, #e63946 0%, #c1121f 100%);
+    color: white;
+    border: 1px solid #8b0000;
+    padding: 6px 12px;
+    border-radius: var(--radius-xs);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 2px 6px rgba(230, 57, 70, 0.3);
+}
+
+.game-role-citizen {
+    background: linear-gradient(135deg, #2ec4b6 0%, #1a8a7d 100%);
+    color: white;
+    border: 1px solid #0d5a54;
+    padding: 6px 12px;
+    border-radius: var(--radius-xs);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 2px 6px rgba(46, 196, 182, 0.3);
+}
+
+/* Player Status Indicator */
+.game-player-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.game-player-status::before {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Status Color Variants */
+.game-player-status-alive::before {
+    background: linear-gradient(135deg, #2ec4b6, #4fc3d1);
+    box-shadow: 0 0 8px rgba(46, 196, 182, 0.5);
+}
+
+.game-player-status-alive {
+    color: #2ec4b6;
+}
+
+.game-player-status-dead::before {
+    background: #5a6078;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+.game-player-status-dead {
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.game-player-status-moderator::before {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+}
+
+.game-player-status-moderator {
+    color: var(--gold);
+}
+
+/* Player Actions Container */
+.game-player-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.game-player-actions .game-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-width: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 8: TYPOGRAPHY & TEXT EFFECTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Gold Gradient Headers */
+.game-title {
+    font-size: 32px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #daa520 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    margin-bottom: 16px;
+}
+
+.game-subtitle {
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.game-heading {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.5),
+        0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+/* Glow Text: Ethereal emphasis */
+.game-text-glow {
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
+}
+
+/* Code and Numbers: Monospace style */
+.game-code,
+.game-number {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+/* Important Alert Text */
+.game-alert {
+    color: #ff6a7d;
+    font-weight: 700;
+    text-shadow: 
+        0 0 8px rgba(230, 57, 70, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Success/Good Status Text */
+.game-success-text {
+    color: #2ec4b6;
+    font-weight: 700;
+    text-shadow: 
+        0 0 8px rgba(46, 196, 182, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 9: CUSTOM SCROLLBAR STYLING
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Webkit Browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(10, 10, 18, 0.5);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #5a5a7a 0%, #3a3a5a 100%);
+    border-radius: 10px;
+    border: 2px solid rgba(10, 10, 18, 0.5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #7a7a9a 0%, #5a5a7a 100%);
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #5a5a7a rgba(10, 10, 18, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 10: ANIMATIONS & TRANSITIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Pulse Animation: Breathing glow effect */
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
+    }
+}
+
+.game-pulse {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Shimmer Animation: Shine sweep effect */
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.game-shimmer {
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.2), 
+        transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* Bounce Animation: Upward bounce */
+@keyframes bounce-in {
+    0% {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    60% {
+        transform: translateY(-5px);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.game-bounce-in {
+    animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Slide and Glow: Entrance effect */
+@keyframes slide-glow {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+        filter: drop-shadow(0 0 0 rgba(255, 215, 0, 0));
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3));
+    }
+}
+
+.game-slide-glow {
+    animation: slide-glow 0.5s ease-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 11: RESPONSIVE DESIGN & MOBILE OPTIMIZATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Medium Screens (Tablets) */
+@media (max-width: 1024px) {
+    .game-player-row {
+        grid-template-columns: 1fr 120px 100px;
+        gap: 10px;
+    }
+    
+    .game-title {
+        font-size: 28px;
+        letter-spacing: 2px;
+    }
+    
+    .game-panel {
+        padding: 20px;
+    }
+}
+
+/* Small Screens (Mobile) */
+@media (max-width: 640px) {
+    .game-player-row {
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+    
+    .game-nameplate {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    .game-role-mafia,
+    .game-role-citizen {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    .game-player-actions {
+        grid-column: 2;
+        flex-wrap: wrap;
+    }
+    
+    .game-player-status {
+        display: none;
+    }
+    
+    .game-btn {
+        padding: 12px 18px;
+        font-size: 14px;
+    }
+    
+    .game-input {
+        padding: 12px 14px;
+        font-size: 16px;
+    }
+    
+    .game-title {
+        font-size: 24px;
+        letter-spacing: 1.5px;
+    }
+    
+    .game-subtitle {
+        font-size: 16px;
+        letter-spacing: 1px;
+    }
+    
+    .game-heading {
+        font-size: 16px;
+        letter-spacing: 1px;
+    }
+    
+    .game-panel {
+        padding: 16px;
+        border-radius: var(--radius-sm);
+    }
+    
+    .game-room-code {
+        gap: 6px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .game-code-tile {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+    }
+    
+    /* Reduce particle animation load on mobile */
+    .particles-container {
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 12: ACCESSIBILITY & UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Focus Visible States for Keyboard Navigation */
+.game-btn:focus-visible,
+.game-input:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: more) {
+    .game-btn {
+        border-width: 3px;
+    }
+    
+    .game-input {
+        border-width: 3px;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .particle {
+        display: none;
+    }
+}
+
+/* Printing Support */
+@media print {
+    .particles-container,
+    .vignette::after {
+        display: none;
+    }
+    
+    .game-btn {
+        border: 1px solid #000;
+        background: white;
+        color: black;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 13: DARK MODE & THEME VARIANTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Darker Variant (Extra Immersive) */
+.game-theme-darker {
+    --bg-dark: #05050a;
+    --bg-card: #0d0d1a;
+    --bg-surface: #14142a;
+}
+
+/* Higher Contrast Variant */
+.game-theme-highcontrast {
+    --gold: #ffff00;
+    --primary: #ff0000;
+    --secondary: #00ffff;
+    --text: #ffffff;
+}
+
+/* Burgundy Felt Theme */
+.game-theme-burgundy {
+    background-color: #5c2e3a;
+}
+
+/* Green Felt Theme */
+.game-theme-green {
+    background-color: #1a4d2e;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 14: COMPONENT COMBINATIONS & COMPLEX LAYOUTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Game Modal Container */
+.game-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+}
+
+.game-modal-content {
+    background: rgba(20, 20, 42, 0.95);
+    border: 2px solid var(--gold);
+    border-radius: var(--radius);
+    padding: 32px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 40px rgba(255, 215, 0, 0.2);
+    animation: bounce-in 0.4s ease-out;
+}
+
+/* Player List Container */
+.game-players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.game-players-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.game-players-list::-webkit-scrollbar-thumb {
+    background: rgba(90, 90, 122, 0.6);
+    border-radius: 4px;
+}
+
+/* Game Grid Layout: For game board/table display */
+.game-grid {
+    display: grid;
+    gap: 16px;
+    grid-auto-rows: auto;
+}
+
+/* Message Container: For game chat/notifications */
+.game-message {
+    padding: 12px 16px;
+    border-left: 3px solid var(--gold);
+    background: rgba(255, 215, 0, 0.05);
+    border-radius: var(--radius-xs);
+    margin-bottom: 8px;
+    animation: slide-glow 0.3s ease-out;
+}
+
+.game-message-info {
+    color: var(--text-dim);
+    border-left-color: var(--secondary);
+    background: rgba(69, 123, 157, 0.1);
+}
+
+.game-message-success {
+    color: var(--success);
+    border-left-color: var(--success);
+    background: rgba(46, 196, 182, 0.1);
+}
+
+.game-message-danger {
+    color: var(--danger);
+    border-left-color: var(--danger);
+    background: rgba(230, 57, 70, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   END OF GAME-UI.CSS FRAMEWORK
+   Production-ready premium stylesheet for Mafia-3Shi
+   ═══════════════════════════════════════════════════════════════════════════ */

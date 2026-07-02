@@ -1,0 +1,713 @@
+/* ================================================================
+   MAFIA ARCADE — TRADING CARD SYSTEM
+   نظام البطاقات التجميعية — ندرة، لمعة، قلب ثلاثي الأبعاد
+   ================================================================ */
+
+/* ──────────────────────────────────────────────────────────────
+   1. CARD CONTAINER & 3D FLIP
+   ────────────────────────────────────────────────────────────── */
+.tc-card {
+  --card-w: 160px;
+  --card-h: 224px;
+  --_frame:  rgba(150,122,97,0.45);
+  --_glow:   rgba(183,142,87,0.16);
+  --_shine1: rgba(255,244,220,0.12);
+  --_shine2: rgba(95,55,38,0.08);
+
+  width: var(--card-w);
+  height: var(--card-h);
+  perspective: 800px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Inner — rotates on flip */
+.tc-card-inner {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 14px;
+  will-change: transform;
+}
+.tc-card.flipped .tc-card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Both faces */
+.tc-front, .tc-back {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   2. CARD FRONT
+   ────────────────────────────────────────────────────────────── */
+.tc-front {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #d8c6a1 0%, #b99d73 100%);
+  border: 2px solid var(--_frame);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.8),
+    0 12px 35px rgba(0,0,0,0.75),
+    inset 0 1px 0 rgba(255,244,220,0.4),
+    0 0 20px var(--_glow);
+}
+
+/* Artwork area */
+.tc-art {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255,244,216,0.55), transparent 52%),
+    linear-gradient(145deg, #ead9b6, #b89467);
+}
+
+.tc-art-icon {
+  font-size: 3.4rem;
+  filter: drop-shadow(0 0 18px var(--_glow));
+  transition: transform 0.3s ease;
+  position: relative; z-index: 2;
+}
+
+/* Radial glow behind icon */
+.tc-art::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 60%, var(--_glow) 0%, transparent 65%);
+  opacity: 0.35;
+}
+
+/* Holographic stripe moving across art */
+.tc-art::after {
+  content: '';
+  position: absolute; top: -100%; left: -100%;
+  width: 60%; height: 300%;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,249,230,0.18) 50%, transparent 60%);
+  transform: skewX(-15deg);
+  transition: left 0.6s ease, top 0.6s ease;
+}
+
+.tc-card:hover .tc-art::after {
+  top: -100%; left: 150%;
+}
+
+/* Bottom info strip */
+.tc-info {
+  padding: 8px 10px 10px;
+  background: linear-gradient(to top, rgba(53,24,20,0.95), rgba(96,58,40,0.78));
+  border-top: 1px solid rgba(255,239,215,0.15);
+  flex-shrink: 0;
+}
+
+.tc-name {
+  font-family: 'Changa', sans-serif;
+  font-size: 0.8rem; font-weight: 800;
+  color: #fff6df; text-align: center;
+  margin-bottom: 5px;
+  line-height: 1.2;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+.tc-badges {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 4px;
+}
+
+.tc-type-badge {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.5px;
+  color: rgba(255,239,215,0.62); text-transform: uppercase;
+  font-family: 'Orbitron', monospace;
+}
+
+.tc-rarity-badge {
+  font-size: 0.6rem; font-weight: 900; letter-spacing: 1px;
+  padding: 2px 7px; border-radius: 10px;
+  text-transform: uppercase; font-family: 'Orbitron', monospace;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   3. CARD BACK (after flip)
+   ────────────────────────────────────────────────────────────── */
+.tc-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(160deg, #e5d1ac, #b5956a);
+  border: 2px solid var(--_frame);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.8),
+    0 12px 35px rgba(0,0,0,0.75),
+    inset 0 1px 0 rgba(255,244,220,0.35),
+    0 0 20px var(--_glow);
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Back logo/watermark */
+.tc-back::before {
+  content: 'MAFIA';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-20deg);
+  font-family: 'Orbitron', monospace; font-size: 2.2rem; font-weight: 900;
+  color: rgba(88,48,31,0.08); letter-spacing: 4px; pointer-events: none;
+  white-space: nowrap;
+}
+
+.tc-back-header {
+  display: flex; align-items: center; gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(93,58,41,0.18);
+}
+
+.tc-back-icon { font-size: 1.8rem; }
+
+.tc-back-title {
+  font-family: 'Changa', sans-serif;
+  font-size: 0.85rem; font-weight: 800; color: #3f241c;
+  line-height: 1.2;
+}
+
+.tc-back-rarity {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; font-family: 'Orbitron', monospace;
+  opacity: 0.8;
+}
+
+.tc-back-desc {
+  font-family: 'Changa', sans-serif;
+  font-size: 0.76rem; color: rgba(63,36,28,0.82);
+  line-height: 1.5; flex: 1;
+}
+
+.tc-back-lore {
+  font-family: 'Changa', sans-serif;
+  font-size: 0.68rem; color: rgba(73,48,39,0.6);
+  font-style: italic; line-height: 1.4;
+  padding-top: 6px;
+  border-top: 1px solid rgba(93,58,41,0.16);
+}
+
+.tc-back-stat {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(85,52,36,0.08);
+  border: 1px solid rgba(93,58,41,0.18);
+  border-radius: 6px; padding: 5px 8px;
+}
+.tc-back-stat-label { font-size: 0.65rem; color: rgba(63,36,28,0.5); font-family: 'Orbitron', monospace; }
+.tc-back-stat-val   { font-size: 0.72rem; font-weight: 800; font-family: 'Orbitron', monospace; }
+
+/* flip hint */
+.tc-flip-hint {
+  font-size: 0.58rem; text-align: center;
+  color: rgba(63,36,28,0.32); letter-spacing: 1px;
+  font-family: 'Orbitron', monospace; text-transform: uppercase;
+  margin-top: auto;
+}
+
+/* Hover lift */
+@media (hover: hover) {
+  .tc-card:not(.flipped):hover .tc-card-inner {
+    transform: translateY(-8px) rotateX(4deg) scale(1.04);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.9), 0 0 30px var(--_glow);
+  }
+  .tc-card:not(.flipped):hover .tc-art-icon {
+    transform: scale(1.12);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   4. RARITY VARIANTS
+   ────────────────────────────────────────────────────────────── */
+
+/* ── Common (شائع) — plain white ── */
+.tc-common {
+  --_frame:  rgba(137,121,108,0.45);
+  --_glow:   rgba(123,103,89,0.12);
+}
+.tc-common .tc-rarity-badge { color: #786b60; border: 1px solid rgba(120,107,96,0.32); background: rgba(120,107,96,0.08); }
+.tc-common .tc-back-rarity  { color: #786b60; }
+.tc-common .tc-back-stat-val{ color: #786b60; }
+
+/* ── Rare (نادر) — blue ── */
+.tc-rare {
+  --_frame:  rgba(99,122,141,0.56);
+  --_glow:   rgba(99,122,141,0.22);
+}
+.tc-rare .tc-front,
+.tc-rare .tc-back {
+  background: linear-gradient(160deg, #d6cab5, #9aa6af);
+}
+.tc-rare .tc-art {
+  background: linear-gradient(145deg, #e2d6bf, #8a9ba7);
+}
+.tc-rare .tc-rarity-badge { color: #5e7282; border: 1px solid rgba(94,114,130,0.36); background: rgba(94,114,130,0.08); }
+.tc-rare .tc-back-rarity   { color: #5e7282; }
+.tc-rare .tc-back-stat-val { color: #5e7282; }
+/* Blue shimmer bar */
+.tc-rare .tc-front::after,
+.tc-rare .tc-back::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, #708897, transparent);
+  opacity: 0.7;
+}
+
+/* ── Epic (ملحمي) — purple, moving shimmer ── */
+.tc-epic {
+  --_frame:  rgba(117,89,116,0.65);
+  --_glow:   rgba(117,89,116,0.28);
+}
+.tc-epic .tc-front,
+.tc-epic .tc-back {
+  background: linear-gradient(160deg, #d8c7cf, #8f718d);
+}
+.tc-epic .tc-art {
+  background: linear-gradient(145deg, #e6d7dd, #846884);
+}
+.tc-epic .tc-rarity-badge { color: #6f5a70; border: 1px solid rgba(111,90,112,0.34); background: rgba(111,90,112,0.1); }
+.tc-epic .tc-back-rarity   { color: #6f5a70; }
+.tc-epic .tc-back-stat-val { color: #6f5a70; }
+
+/* Animated purple shimmer */
+.tc-epic .tc-front::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: 12px;
+  background: linear-gradient(135deg, transparent 30%, rgba(117,89,116,0.1) 50%, transparent 70%);
+  background-size: 200% 200%;
+  animation: epicShimmer 3s ease infinite;
+  pointer-events: none; z-index: 1;
+}
+@keyframes epicShimmer {
+  0%   { background-position: 0%   0%; }
+  50%  { background-position: 100% 100%; }
+  100% { background-position: 0%   0%; }
+}
+.tc-epic .tc-front::after,
+.tc-epic .tc-back::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, #775a76, transparent);
+  opacity: 0.8;
+}
+
+/* ── Legendary (أسطوري) — gold + holographic rainbow ── */
+.tc-legendary {
+  --_frame:  rgba(171,133,68,0.8);
+  --_glow:   rgba(171,133,68,0.35);
+}
+.tc-legendary .tc-front,
+.tc-legendary .tc-back {
+  background: linear-gradient(160deg, #ead9af, #b88e43);
+  border-color: transparent;
+}
+.tc-legendary .tc-art {
+  background: linear-gradient(145deg, #f0e0bb, #c7974a);
+}
+.tc-legendary .tc-rarity-badge { color: #7b5918; border: 1px solid rgba(123,89,24,0.42); background: rgba(197,151,74,0.18); }
+.tc-legendary .tc-back-rarity   { color: #7b5918; }
+.tc-legendary .tc-back-stat-val { color: #7b5918; }
+.tc-legendary .tc-art-icon { filter: drop-shadow(0 0 20px rgba(171,133,68,0.55)); }
+
+/* Holographic rainbow border — gradient border trick */
+.tc-legendary .tc-card-inner {
+  background: linear-gradient(135deg, #6a4a1c, #d8b16a 22%, #f6e2ae 50%, #b98937 78%, #5a3813);
+  padding: 2px;
+  border-radius: 16px;
+  animation: none;
+}
+.tc-legendary .tc-front,
+.tc-legendary .tc-back {
+  border: none;
+  margin: 0;
+}
+
+/* Gold shimmer moving across */
+.tc-legendary .tc-front::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: 12px; z-index: 1;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0px,
+    transparent 8px,
+    rgba(171,133,68,0.05) 8px,
+    rgba(171,133,68,0.05) 10px
+  );
+  pointer-events: none;
+}
+
+/* Glitter particles on legendary */
+.tc-legendary .tc-art::after {
+  background: linear-gradient(105deg,
+    transparent 35%,
+    rgba(244,223,178,0.24) 48%,
+    rgba(255,255,255,0.2) 52%,
+    transparent 65%
+  );
+  animation: legendShine 3.2s ease-in-out infinite;
+}
+@keyframes legendShine {
+  0%   { left: -100%; top: -100%; }
+  100% { left: 200%; top: 200%; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   5. LOCKED CARD STATE
+   ────────────────────────────────────────────────────────────── */
+.tc-card.locked .tc-front {
+  filter: grayscale(0.55) brightness(0.72);
+}
+.tc-card.locked .tc-art-icon { filter: none; opacity: 0.3; }
+
+.tc-lock-overlay {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  background: rgba(21,11,11,0.58);
+  backdrop-filter: blur(2px);
+  border-radius: 12px;
+}
+.tc-lock-icon { font-size: 1.8rem; opacity: 0.6; }
+.tc-lock-text {
+  font-size: 0.6rem; color: rgba(243,232,212,0.52);
+  font-family: 'Orbitron', monospace; letter-spacing: 1px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   6. OWNED / EQUIPPED BADGE
+   ────────────────────────────────────────────────────────────── */
+.tc-owned-badge {
+  position: absolute; top: 8px; right: 8px; z-index: 20;
+  background: rgba(127,143,95,0.16); border: 1px solid rgba(127,143,95,0.48);
+  color: #dce4c0; border-radius: 6px; padding: 2px 7px;
+  font-size: 0.55rem; font-weight: 800; letter-spacing: 1px;
+  font-family: 'Orbitron', monospace; text-transform: uppercase;
+}
+.tc-equipped-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 20;
+  background: rgba(171,133,68,0.18); border: 1px solid rgba(171,133,68,0.48);
+  color: #f2ddb0; border-radius: 6px; padding: 2px 7px;
+  font-size: 0.55rem; font-weight: 800; letter-spacing: 1px;
+  font-family: 'Orbitron', monospace; text-transform: uppercase;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   7. PACK CARDS
+   ────────────────────────────────────────────────────────────── */
+.tc-pack {
+  width: 200px;
+  border-radius: 18px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  background: linear-gradient(145deg, #351616, #1a0c0c);
+  border: 1px solid rgba(243,232,212,0.08);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+}
+@media (hover: hover) {
+  .tc-pack:hover {
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 30px var(--pack-glow, rgba(171,133,68,0.26));
+  }
+}
+.tc-pack:active { transform: translateY(-4px) scale(0.99); }
+
+.tc-pack-art {
+  height: 140px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  font-size: 4.5rem;
+  background: radial-gradient(circle at 50% 50%, var(--pack-glow, rgba(171,133,68,0.15)) 0%, transparent 70%);
+}
+.tc-pack-art::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.01) 10px, rgba(255,255,255,0.01) 11px);
+}
+.tc-pack-icon { position: relative; z-index: 2; filter: drop-shadow(0 0 20px var(--pack-glow, rgba(171,133,68,0.44))); animation: dsFloat 3s ease-in-out infinite; }
+
+.tc-pack-body { padding: 14px 16px 18px; }
+.tc-pack-name {
+  font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 900;
+  color: #fff; letter-spacing: 2px; text-align: center; margin-bottom: 6px;
+}
+.tc-pack-desc {
+  font-family: 'Changa', sans-serif; font-size: 0.78rem;
+  color: rgba(255,255,255,0.5); text-align: center; margin-bottom: 12px; line-height: 1.4;
+}
+.tc-pack-rates {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px;
+}
+.tc-pack-rate-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.65rem; font-family: 'Orbitron', monospace;
+}
+.tc-pack-rate-bar-wrap {
+  flex: 1; height: 4px; background: rgba(255,255,255,0.08);
+  border-radius: 2px; margin: 0 8px; overflow: hidden;
+}
+.tc-pack-rate-bar { height: 100%; border-radius: 2px; }
+.tc-pack-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;
+}
+.tc-pack-price {
+  font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 900;
+  color: var(--pack-color, #cfb06f);
+  display: flex; align-items: center; gap: 6px;
+}
+.tc-pack-price-gem { font-size: 1rem; }
+.tc-pack-cards-count {
+  font-size: 0.65rem; color: rgba(255,255,255,0.4);
+  font-family: 'Orbitron', monospace;
+}
+
+/* Pack top accent stripe */
+.tc-pack::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--pack-color, #cfb06f);
+  box-shadow: 0 0 12px var(--pack-glow, rgba(171,133,68,0.4));
+}
+
+/* ──────────────────────────────────────────────────────────────
+   8. PACK OPENING MODAL
+   ────────────────────────────────────────────────────────────── */
+#pack-open-modal {
+  position: fixed; inset: 0; z-index: 99000;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(17,8,8,0.97); backdrop-filter: blur(16px);
+}
+#pack-open-modal.active { display: flex; }
+
+.pack-open-scene {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 28px; width: 100%; max-width: 900px; padding: 20px;
+  position: relative;
+}
+
+/* Pack reveal animation */
+.pack-reveal-wrap {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  height: 180px;
+}
+.pack-reveal-icon {
+  font-size: 8rem; cursor: pointer;
+  filter: drop-shadow(0 0 40px var(--pack-glow, rgba(171,133,68,0.5)));
+  animation: packFloat 2s ease-in-out infinite;
+  transition: transform 0.3s ease, filter 0.3s;
+  position: relative; z-index: 2;
+}
+.pack-reveal-icon:hover {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 60px var(--pack-glow, rgba(171,133,68,0.75)));
+}
+@keyframes packFloat {
+  0%,100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-14px) rotate(2deg); }
+}
+
+.pack-open-rings {
+  position: absolute; inset: -40px;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.pack-ring {
+  position: absolute; border-radius: 50%;
+  border: 1px solid var(--pack-color, #cfb06f);
+  opacity: 0; animation: ringExpand 2s ease-out infinite;
+}
+.pack-ring:nth-child(1) { width: 120px; height: 120px; animation-delay: 0s; }
+.pack-ring:nth-child(2) { width: 180px; height: 180px; animation-delay: 0.5s; }
+.pack-ring:nth-child(3) { width: 240px; height: 240px; animation-delay: 1s; }
+@keyframes ringExpand {
+  0%   { transform: scale(0.5); opacity: 0.6; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.pack-open-prompt {
+  font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 700;
+  color: rgba(255,255,255,0.6); letter-spacing: 3px; text-align: center;
+  animation: dsPulse 1.5s ease-in-out infinite;
+}
+
+/* Cards reveal row */
+.pack-cards-reveal {
+  display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  min-height: 224px; align-items: center;
+}
+
+/* Each revealed card appears with animation */
+.pack-card-slot {
+  opacity: 0; transform: translateY(40px) scale(0.8);
+}
+.pack-card-slot.revealed {
+  animation: cardReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes cardReveal {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* NEW badge on card */
+.tc-new-badge {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(90deg, #8a4338, #b37b42); color: #fff7e6;
+  font-family: 'Orbitron', monospace; font-size: 0.55rem; font-weight: 900;
+  padding: 3px 10px; border-radius: 10px; letter-spacing: 2px;
+  box-shadow: 0 4px 15px rgba(138,67,56,0.4);
+  white-space: nowrap; z-index: 30;
+}
+
+/* Duplicate badge */
+.tc-dup-badge {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  background: rgba(100,100,120,0.9); color: rgba(255,255,255,0.6);
+  font-family: 'Orbitron', monospace; font-size: 0.55rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 10px; letter-spacing: 1px;
+  white-space: nowrap; z-index: 30;
+}
+
+/* Pack modal footer buttons */
+.pack-modal-footer {
+  display: flex; gap: 14px; justify-content: center;
+}
+
+/* Legendary flash overlay */
+.legendary-flash {
+  position: fixed; inset: 0; z-index: 99999; pointer-events: none;
+  background: radial-gradient(circle, rgba(207,176,111,0.34) 0%, transparent 70%);
+  opacity: 0;
+}
+.legendary-flash.burst {
+  animation: legendBurst 0.8s ease-out forwards;
+}
+@keyframes legendBurst {
+  0%   { opacity: 1; transform: scale(0.5); }
+  100% { opacity: 0; transform: scale(2); }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   9. STORE LAYOUT OVERRIDES
+   ────────────────────────────────────────────────────────────── */
+.store-packs-grid {
+  display: flex; flex-wrap: wrap; gap: 24px;
+  justify-content: center; padding: 24px 0;
+}
+
+.store-cards-grid {
+  display: flex; flex-wrap: wrap; gap: 20px;
+  justify-content: center; padding: 24px 0;
+}
+
+/* Store tab buttons — matching pixel style */
+.store-tabs {
+  display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+  padding: 16px 0 8px;
+}
+.store-tab {
+  font-family: 'Orbitron', monospace; font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 10px 20px; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5);
+  transition: all 0.2s ease;
+}
+.store-tab:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
+.store-tab.active {
+  background: rgba(207,176,111,0.1); border-color: rgba(207,176,111,0.42);
+  color: #f1dfb6; box-shadow: 0 0 14px rgba(207,176,111,0.12);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   10. COLLECTION LAYOUT
+   ────────────────────────────────────────────────────────────── */
+.collection-cards-grid {
+  display: flex; flex-wrap: wrap; gap: 20px;
+  justify-content: center; padding: 20px;
+}
+
+/* Rarity section label */
+.rarity-section-label {
+  width: 100%; text-align: center;
+  font-family: 'Orbitron', monospace; font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 4px; text-transform: uppercase; padding: 8px 0;
+  opacity: 0.5; position: relative;
+}
+.rarity-section-label::before,
+.rarity-section-label::after {
+  content: '';
+  position: absolute; top: 50%; width: 30%; height: 1px;
+  background: currentColor; opacity: 0.3;
+}
+.rarity-section-label::before { right: calc(50% + 80px); }
+.rarity-section-label::after  { left:  calc(50% + 80px); }
+
+/* ──────────────────────────────────────────────────────────────
+   11. RESPONSIVE
+   ────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tc-card {
+    --card-w: 130px;
+    --card-h: 182px;
+  }
+  .tc-art-icon { font-size: 2.8rem; }
+  .tc-name     { font-size: 0.72rem; }
+  .tc-pack     { width: 165px; }
+  .tc-pack-art { height: 110px; font-size: 3.5rem; }
+  .pack-reveal-icon { font-size: 6rem; }
+}
+
+@media (max-width: 480px) {
+  .tc-card {
+    --card-w: 110px;
+    --card-h: 154px;
+  }
+  .tc-art-icon { font-size: 2.2rem; }
+  .tc-name     { font-size: 0.65rem; }
+  .store-packs-grid { gap: 14px; }
+  .store-cards-grid { gap: 12px; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   12. EQUIPPED / BREATHING EFFECT
+   ────────────────────────────────────────────────────────────── */
+.tc-card.equipped .tc-card-inner {
+  animation: cardBreathe 2.5s ease-in-out infinite;
+}
+@keyframes cardBreathe {
+  0%, 100% {
+    box-shadow: 0 12px 35px rgba(0,0,0,0.75), 0 0 20px rgba(171,133,68,0.18);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 16px 45px rgba(0,0,0,0.8), 0 0 35px rgba(171,133,68,0.3);
+    transform: scale(1.02);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   13. COIN FLIP ANIMATION (store purchase)
+   ────────────────────────────────────────────────────────────── */
+@keyframes coinFlip {
+  0%   { transform: rotateY(0deg) scale(1); }
+  25%  { transform: rotateY(180deg) scale(1.3); }
+  50%  { transform: rotateY(360deg) scale(1); }
+  75%  { transform: rotateY(540deg) scale(1.2); }
+  100% { transform: rotateY(720deg) scale(1); }
+}
+.coin-flip-anim {
+  animation: coinFlip 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}

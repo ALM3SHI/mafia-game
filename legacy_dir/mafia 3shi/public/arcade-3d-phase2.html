@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAFIA 3SHI - PHASE 2: DAY-TO-NIGHT & MULTIPLAYER</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            font-family: 'Tajawal', Arial, sans-serif;
+            background: #0a0e27;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .hud-top {
+            position: absolute;
+            top: 30px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            pointer-events: auto;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .hud-top.sleeping {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .hud-title {
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff006e, #00f5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(255, 1, 110, 0.4);
+        }
+        
+        .hud-title.night {
+            background: linear-gradient(90deg, #8B0000, #DC143C);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hud-mode {
+            background: rgba(255, 1, 110, 0.1);
+            border: 2px solid #ff006e;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: #00f5ff;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+        
+        .hud-mode.night {
+            background: rgba(139, 0, 0, 0.2);
+            border-color: #DC143C;
+            color: #FF6347;
+        }
+        
+        .hud-bottom {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 0 40px;
+            pointer-events: auto;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .hud-bottom.sleeping {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .hud-button {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #ff006e, #ff3366);
+            border: 2px solid #00f5ff;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 1, 110, 0.3);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .hud-button:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 40px rgba(255, 1, 110, 0.6);
+        }
+        
+        .hud-button.night {
+            background: linear-gradient(135deg, #8B0000, #DC143C);
+            border-color: #FF6347;
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.5);
+        }
+        
+        .hud-button.night:hover {
+            box-shadow: 0 0 40px rgba(220, 20, 60, 0.8);
+        }
+        
+        .phase-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .phase-text {
+            font-size: 48px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: rgba(255, 1, 110, 0.8);
+            text-shadow: 0 0 30px rgba(255, 1, 110, 0.6);
+            opacity: 0;
+            animation: phaseFlash 1s ease-out 0.5s forwards;
+        }
+        
+        .phase-text.night {
+            color: rgba(220, 20, 60, 0.9);
+            text-shadow: 0 0 30px rgba(220, 20, 60, 0.8);
+        }
+        
+        @keyframes phaseFlash {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.2);
+            }
+        }
+        
+        .player-stats {
+            position: absolute;
+            top: 120px;
+            left: 40px;
+            color: #00f5ff;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            pointer-events: auto;
+        }
+        
+        .player-stats.sleeping {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .stat-line {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="ui">
+        <div class="hud-top">
+            <div class="hud-title" id="hudTitle">DAY PHASE</div>
+            <div class="hud-mode" id="hudMode">6 لاعبين / Players</div>
+        </div>
+        <div class="player-stats" id="playerStats">
+            <div class="stat-line">🌞 DAYTIME</div>
+            <div class="stat-line">Discussion & Voting</div>
+        </div>
+        <div class="phase-indicator" id="phaseIndicator"></div>
+        <div class="hud-bottom" id="hudBottom">
+            <button class="hud-button" onclick="triggerDayToNight()">→ الليل / NIGHT</button>
+            <button class="hud-button" onclick="addNewPlayer()">+ لاعب / ADD PLAYER</button>
+            <button class="hud-button" onclick="toggleDebug()">DEBUG</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@r128/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // ===== GLOBAL STATE =====
+        let gameState = {
+            phase: 'day', // 'day' or 'night'
+            players: [],
+            hoveredCard: null,
+            selectedCards: new Set(),
+            cameraShakeActive: false
+        };
+
+        const PLAYER_DATA = [
+            { name: 'LION KNIGHT', emoji: '🦁', color: 0xFF6B6B },
+            { name: 'DRAGON', emoji: '🐉', color: 0xFF1493 },
+            { name: 'PHOENIX', emoji: '🔥', color: 0xFF8C00 },
+            { name: 'WOLF', emoji: '🐺', color: 0x4169E1 },
+            { name: 'TIGER', emoji: '🐯', color: 0xFFD700 },
+            { name: 'SHADOW', emoji: '🌑', color: 0x696969 }
+        ];
+
+        // ===== THREE.JS OBJECTS =====
+        let scene, camera, renderer;
+        let playerCards = [];
+        let eyelidTop, eyelidBottom;
+        let ambientLight, spotlight, neonLight1, neonLight2, nightRedLight;
+        let centralCard;
+        let debugMode = false;
+
+        // ===== INITIALIZATION =====
+        function init() {
+            setupScene();
+            setupLights();
+            setupTable();
+            setupInitialPlayers();
+            setupEyelids();
+            setupEvents();
+            animate();
+            
+            // Add debug info
+            console.log('Phase 2: Day-to-Night & Multiplayer System');
+            console.log('Click "→ الليل / NIGHT" button to trigger sleeping/awakening sequence');
+            console.log('Click "+ لاعب / ADD PLAYER" to summon new players');
+            console.log('Hover over cards to see glow intensification');
+            console.log('Click cards to select them (red target appears)');
+        }
+
+        function setupScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e27);
+            scene.fog = new THREE.Fog(0x0a0e27, 100, 300);
+
+            camera = new THREE.PerspectiveCamera(
+                70,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 3, 12);
+            camera.lookAt(0, 1.5, 0);
+
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('canvas'),
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+        }
+
+        function setupLights() {
+            // Ambient light (day)
+            ambientLight = new THREE.AmbientLight(0x1a2a5c, 0.5);
+            scene.add(ambientLight);
+
+            // Spotlight (day)
+            spotlight = new THREE.SpotLight(0x00f5ff, 1.8, 150, Math.PI / 2.5, 0.4, 2);
+            spotlight.position.set(0, 20, 8);
+            spotlight.target.position.set(0, 1.5, 0);
+            spotlight.castShadow = true;
+            spotlight.shadow.mapSize.width = 2048;
+            spotlight.shadow.mapSize.height = 2048;
+            scene.add(spotlight);
+            scene.add(spotlight.target);
+
+            // Neon lights (day colors)
+            neonLight1 = new THREE.PointLight(0xff006e, 1.2, 60);
+            neonLight1.position.set(12, 4, 8);
+            scene.add(neonLight1);
+
+            neonLight2 = new THREE.PointLight(0x00f5ff, 1, 50);
+            neonLight2.position.set(-12, 4, 8);
+            scene.add(neonLight2);
+
+            // Night red light (hidden for now)
+            nightRedLight = new THREE.PointLight(0x8B0000, 0, 80);
+            nightRedLight.position.set(0, 6, 0);
+            scene.add(nightRedLight);
+        }
+
+        function setupTable() {
+            const tableGeometry = new THREE.PlaneGeometry(80, 80);
+            const tableMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0a0e27,
+                roughness: 0.9,
+                metalness: 0.05,
+                emissive: 0x1a3a5a,
+                emissiveIntensity: 0.15
+            });
+            const table = new THREE.Mesh(tableGeometry, tableMaterial);
+            table.rotation.x = -Math.PI / 2;
+            table.position.y = -0.5;
+            table.receiveShadow = true;
+            scene.add(table);
+        }
+
+        function setupInitialPlayers() {
+            // Add initial 3 players
+            for (let i = 0; i < 3; i++) {
+                gameState.players.push({
+                    id: i,
+                    data: PLAYER_DATA[i],
+                    mesh: null,
+                    position: { index: i }
+                });
+            }
+            renderPlayerCards();
+        }
+
+        function calculateSemiCirclePositions(count) {
+            const positions = [];
+            const radius = 6;
+            const baseHeight = 1.5;
+            const startAngle = Math.PI / 4;
+            const endAngle = (Math.PI * 3) / 4;
+            const angleStep = (endAngle - startAngle) / (count - 1);
+
+            for (let i = 0; i < count; i++) {
+                const angle = startAngle + angleStep * i;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                
+                // Scale factor for edge cards (smaller on edges, larger in middle)
+                const scaleFactor = 0.85 + 0.15 * Math.cos((angle - Math.PI / 2) * 2);
+                
+                // Rotation towards center
+                const rotY = angle - Math.PI / 2;
+
+                positions.push({
+                    x, y: baseHeight, z,
+                    rotY,
+                    scale: scaleFactor
+                });
+            }
+
+            return positions;
+        }
+
+        function createPlayerCard(player, positionData) {
+            const cardGroup = new THREE.Group();
+
+            // Card body
+            const cardGeometry = new THREE.BoxGeometry(2.5, 3.6, 0.12);
+            const cardMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1a2a5c,
+                roughness: 0.3,
+                metalness: 0.8,
+                emissive: 0x2a4a9c,
+                emissiveIntensity: 0.25
+            });
+            const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
+            cardMesh.castShadow = true;
+            cardMesh.receiveShadow = true;
+            cardGroup.add(cardMesh);
+
+            // Card border glow
+            const borderGeometry = new THREE.BoxGeometry(2.6, 3.7, 0.08);
+            const borderMaterial = new THREE.MeshStandardMaterial({
+                color: player.data.color,
+                emissive: player.data.color,
+                emissiveIntensity: 0.4,
+                roughness: 0.2,
+                metalness: 0.95
+            });
+            const borderMesh = new THREE.Mesh(borderGeometry, borderMaterial);
+            borderMesh.position.z = 0.06;
+            borderMesh.castShadow = true;
+            cardGroup.add(borderMesh);
+
+            // Character art (emoji canvas)
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 360;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0e27';
+            ctx.fillRect(0, 0, 256, 360);
+
+            const gradient = ctx.createLinearGradient(0, 0, 256, 360);
+            gradient.addColorStop(0, '#1a2a5c');
+            gradient.addColorStop(1, '#2a4a9c');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 256, 360);
+
+            ctx.font = 'bold 120px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(player.data.emoji, 128, 120);
+
+            ctx.font = 'bold 16px Tajawal, Arial';
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText(player.data.name, 128, 280);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const frontMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                emissive: 0x00f5ff,
+                emissiveIntensity: 0.15,
+                roughness: 0.5,
+                metalness: 0.5
+            });
+
+            const frontGeometry = new THREE.PlaneGeometry(2.45, 3.5);
+            const frontMesh = new THREE.Mesh(frontGeometry, frontMaterial);
+            frontMesh.position.z = 0.08;
+            frontMesh.castShadow = true;
+            cardGroup.add(frontMesh);
+
+            // Glow light
+            const cardLight = new THREE.PointLight(player.data.color, 0.6, 12);
+            cardLight.position.z = 1.5;
+            cardGroup.add(cardLight);
+
+            // Store reference for interaction
+            cardGroup.userData = {
+                playerId: player.id,
+                playerData: player,
+                cardLight: cardLight,
+                borderMaterial: borderMaterial,
+                originalGlowIntensity: 0.4
+            };
+
+            // Position card in semi-circle
+            cardGroup.position.set(positionData.x, positionData.y, positionData.z);
+            cardGroup.rotation.y = positionData.rotY;
+            cardGroup.scale.set(positionData.scale, positionData.scale, positionData.scale);
+
+            return cardGroup;
+        }
+
+        function renderPlayerCards() {
+            // Remove old cards
+            playerCards.forEach(card => scene.remove(card));
+            playerCards = [];
+
+            // Calculate positions
+            const positions = calculateSemiCirclePositions(gameState.players.length);
+
+            // Create new cards
+            gameState.players.forEach((player, index) => {
+                const card = createPlayerCard(player, positions[index]);
+                scene.add(card);
+                playerCards.push(card);
+                player.mesh = card;
+            });
+        }
+
+        function setupEyelids() {
+            // Top eyelid
+            const eyelidGeometry = new THREE.PlaneGeometry(window.innerWidth * 2, window.innerHeight);
+            const eyelidMaterial = new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                transparent: true,
+                opacity: 0
+            });
+
+            eyelidTop = new THREE.Mesh(eyelidGeometry, eyelidMaterial);
+            eyelidTop.position.set(0, window.innerHeight / 2 + 5, -5);
+            eyelidTop.name = 'eyelidTop';
+            scene.add(eyelidTop);
+
+            eyelidBottom = new THREE.Mesh(eyelidGeometry, eyelidMaterial);
+            eyelidBottom.position.set(0, -(window.innerHeight / 2) - 5, -5);
+            eyelidBottom.name = 'eyelidBottom';
+            scene.add(eyelidBottom);
+        }
+
+        function setupEvents() {
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('click', onMouseClick);
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // ===== INTERACTION HANDLERS =====
+        function onMouseMove(event) {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(playerCards, true);
+
+            // Reset previous hover
+            if (gameState.hoveredCard) {
+                const hoveredCardData = gameState.hoveredCard.userData;
+                gsap.to(hoveredCardData.cardLight, {
+                    intensity: hoveredCardData.originalGlowIntensity,
+                    duration: 0.3
+                });
+                gsap.to(gameState.hoveredCard.position, {
+                    z: '-=0.5',
+                    duration: 0.3,
+                    overwrite: 'auto'
+                });
+            }
+
+            // Apply hover to new card
+            if (intersects.length > 0) {
+                const clickedCard = intersects[0].object.parent;
+                gameState.hoveredCard = clickedCard;
+                const cardData = clickedCard.userData;
+
+                // Glow intensification
+                gsap.to(cardData.cardLight, {
+                    intensity: 1.3,
+                    duration: 0.3
+                });
+
+                // Pop forward (Z-axis)
+                gsap.to(clickedCard.position, {
+                    z: '+0.5',
+                    duration: 0.3,
+                    overwrite: 'auto'
+                });
+            } else {
+                gameState.hoveredCard = null;
+            }
+        }
+
+        function onMouseClick(event) {
+            // Skip if clicking UI buttons
+            if (event.target.tagName === 'BUTTON') return;
+
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(playerCards, true);
+
+            if (intersects.length > 0) {
+                const clickedCard = intersects[0].object.parent;
+                const playerId = clickedCard.userData.playerId;
+
+                // Toggle selection
+                if (gameState.selectedCards.has(playerId)) {
+                    gameState.selectedCards.delete(playerId);
+                    removeTargetMark(clickedCard);
+                } else {
+                    gameState.selectedCards.add(playerId);
+                    addTargetMark(clickedCard);
+                }
+
+                console.log('Selected players:', Array.from(gameState.selectedCards));
+            }
+        }
+
+        function addTargetMark(card) {
+            // Create red target overlay
+            const targetGeometry = new THREE.PlaneGeometry(2.8, 4);
+            const targetMaterial = new THREE.MeshBasicMaterial({
+                color: 0xFF0000,
+                transparent: true,
+                opacity: 0,
+                depthTest: false
+            });
+            const targetMesh = new THREE.Mesh(targetGeometry, targetMaterial);
+            targetMesh.position.z = 0.5;
+            targetMesh.name = 'targetMark';
+            card.add(targetMesh);
+
+            // Animate in
+            gsap.to(targetMaterial, {
+                opacity: 0.3,
+                duration: 0.3,
+                ease: 'power2.out'
+            });
+
+            // Slash animation
+            gsap.to(targetMesh.rotation, {
+                z: Math.PI / 4,
+                duration: 0.4,
+                ease: 'back.out'
+            });
+        }
+
+        function removeTargetMark(card) {
+            const targetMesh = card.getObjectByName('targetMark');
+            if (targetMesh) {
+                gsap.to(targetMesh.material, {
+                    opacity: 0,
+                    duration: 0.3,
+                    onComplete: () => {
+                        card.remove(targetMesh);
+                    }
+                });
+            }
+        }
+
+        // ===== DAY-TO-NIGHT TRANSITION =====
+        function triggerDayToNight() {
+            if (gameState.phase === 'night') {
+                triggerNightToDay();
+                return;
+            }
+
+            console.log('INITIATING: Day-to-Night Transition');
+            gameState.phase = 'night';
+
+            // Disable UI
+            document.getElementById('hudTop').classList.add('sleeping');
+            document.getElementById('hudBottom').classList.add('sleeping');
+            document.getElementById('playerStats').classList.add('sleeping');
+
+            // Show phase indicator
+            const phaseIndicator = document.getElementById('phaseIndicator');
+            phaseIndicator.innerHTML = '<div class="phase-text night">🌙 NIGHT PHASE 🌙</div>';
+
+            // Timeline: Eyelids close while lights transition
+            const timeline = gsap.timeline();
+
+            // Close eyelids (1.5 seconds)
+            timeline.to(
+                eyelidTop.material,
+                {
+                    opacity: 1,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                0
+            );
+
+            timeline.to(
+                eyelidBottom.material,
+                {
+                    opacity: 1,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                0
+            );
+
+            // Decrease renderer exposure (vignette darkening)
+            timeline.to(
+                renderer,
+                {
+                    toneMappingExposure: 0.4,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                0
+            );
+
+            // Transition day lights to night (same timeline)
+            timeline.to(
+                spotlight,
+                {
+                    intensity: 0.2,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                0
+            );
+
+            timeline.to(
+                neonLight1,
+                {
+                    intensity: 0,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                0
+            );
+
+            timeline.to(
+                neonLight2,
+                {
+                    intensity: 0,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                0
+            );
+
+            // EYES STAY CLOSED FOR A MOMENT
+            timeline.call(
+                () => {
+                    // During closed eyes: Swap to night lighting
+                    nightRedLight.intensity = 1.5;
+                    ambientLight.intensity = 0.15;
+
+                    // Change card glow to red
+                    playerCards.forEach(card => {
+                        const cardData = card.userData;
+                        cardData.cardLight.color.set(0xFF1493);
+                        gsap.to(cardData.cardLight, {
+                            intensity: 0.9,
+                            duration: 0.5
+                        });
+                    });
+
+                    // Add red pulse effect to scene
+                    gsap.to(nightRedLight, {
+                        intensity: gsap.utils.unitize([1.5, 2], ''),
+                        duration: 0.8,
+                        yoyo: true,
+                        repeat: 2,
+                        ease: 'sine.inOut'
+                    });
+                },
+                1.5
+            );
+
+            // EYES OPEN (1.5 seconds)
+            timeline.to(
+                eyelidTop.material,
+                {
+                    opacity: 0,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                2.2
+            );
+
+            timeline.to(
+                eyelidBottom.material,
+                {
+                    opacity: 0,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                2.2
+            );
+
+            // Restore exposure
+            timeline.to(
+                renderer,
+                {
+                    toneMappingExposure: 1.2,
+                    duration: 1.5,
+                    ease: 'power2.inOut'
+                },
+                2.2
+            );
+
+            // Light reveal + pulsing effect
+            timeline.call(() => {
+                // Keep dim, add red pulsing
+                const pulseTL = gsap.timeline({ repeat: 3 });
+                pulseTL.to(nightRedLight, {
+                    intensity: 2,
+                    duration: 0.6,
+                    ease: 'sine.inOut'
+                });
+                pulseTL.to(nightRedLight, {
+                    intensity: 1.5,
+                    duration: 0.6,
+                    ease: 'sine.inOut'
+                });
+            }, 3.7);
+
+            // Final transition: Enable night UI
+            timeline.call(() => {
+                document.getElementById('hudTop').classList.remove('sleeping');
+                document.getElementById('hudBottom').classList.remove('sleeping');
+                document.getElementById('playerStats').classList.remove('sleeping');
+                document.getElementById('hudTop').classList.add('night');
+                document.getElementById('hudTitle').textContent = 'NIGHT PHASE';
+                document.getElementById('hudTitle').classList.add('night');
+                document.getElementById('hudMode').classList.add('night');
+                document.getElementById('playerStats').innerHTML = `
+                    <div class="stat-line">🌙 NIGHTTIME</div>
+                    <div class="stat-line">Voting & Actions</div>
+                `;
+            }, 3.7);
+        }
+
+        function triggerNightToDay() {
+            console.log('INITIATING: Night-to-Day Transition');
+            gameState.phase = 'day';
+
+            // Disable UI
+            document.getElementById('hudTop').classList.add('sleeping');
+            document.getElementById('hudBottom').classList.add('sleeping');
+            document.getElementById('playerStats').classList.add('sleeping');
+
+            const timeline = gsap.timeline();
+
+            // Close eyelids
+            timeline.to(
+                [eyelidTop.material, eyelidBottom.material],
+                { opacity: 1, duration: 1.5, ease: 'power2.inOut' },
+                0
+            );
+
+            // During closed eyes: Reset to day
+            timeline.call(() => {
+                nightRedLight.intensity = 0;
+                ambientLight.intensity = 0.5;
+                spotlight.intensity = 1.8;
+                neonLight1.intensity = 1.2;
+                neonLight2.intensity = 1;
+
+                // Reset card glow to original colors
+                playerCards.forEach(card => {
+                    const cardData = card.userData;
+                    cardData.cardLight.color.set(cardData.playerData.data.color);
+                    gsap.to(cardData.cardLight, {
+                        intensity: cardData.originalGlowIntensity,
+                        duration: 0.5
+                    });
+                });
+            }, 1.5);
+
+            // Open eyelids
+            timeline.to(
+                [eyelidTop.material, eyelidBottom.material],
+                { opacity: 0, duration: 1.5, ease: 'power2.inOut' },
+                2.2
+            );
+
+            // Restore exposure
+            timeline.to(
+                renderer,
+                { toneMappingExposure: 1.2, duration: 1.5, ease: 'power2.inOut' },
+                2.2
+            );
+
+            // Show day UI
+            timeline.call(() => {
+                document.getElementById('hudTop').classList.remove('sleeping');
+                document.getElementById('hudBottom').classList.remove('sleeping');
+                document.getElementById('playerStats').classList.remove('sleeping');
+                document.getElementById('hudTop').classList.remove('night');
+                document.getElementById('hudTitle').textContent = 'DAY PHASE';
+                document.getElementById('hudTitle').classList.remove('night');
+                document.getElementById('hudMode').classList.remove('night');
+                document.getElementById('playerStats').innerHTML = `
+                    <div class="stat-line">🌞 DAYTIME</div>
+                    <div class="stat-line">Discussion & Voting</div>
+                `;
+            }, 3.7);
+        }
+
+        // ===== PLAYER SUMMONING =====
+        function addNewPlayer() {
+            if (gameState.players.length >= PLAYER_DATA.length) {
+                alert('Maximum players reached!');
+                return;
+            }
+
+            const newPlayer = {
+                id: gameState.players.length,
+                data: PLAYER_DATA[gameState.players.length],
+                mesh: null,
+                position: { index: gameState.players.length }
+            };
+
+            gameState.players.push(newPlayer);
+            renderPlayerCards();
+
+            // Trigger summoning animation for the new card
+            const newCard = playerCards[playerCards.length - 1];
+            triggerPlayerSummon(newCard);
+        }
+
+        function triggerPlayerSummon(card) {
+            // Start behind camera
+            card.position.z = -30;
+            card.scale.set(0.2, 0.2, 0.2);
+
+            const timeline = gsap.timeline();
+
+            // Fly in from behind
+            timeline.to(card.position, {
+                z: calculateSemiCirclePositions(gameState.players.length)[gameState.players.length - 1].z,
+                duration: 1.2,
+                ease: 'power3.out'
+            }, 0);
+
+            // Scale up
+            timeline.to(card.scale, {
+                x: calculateSemiCirclePositions(gameState.players.length)[gameState.players.length - 1].scale,
+                y: calculateSemiCirclePositions(gameState.players.length)[gameState.players.length - 1].scale,
+                z: calculateSemiCirclePositions(gameState.players.length)[gameState.players.length - 1].scale,
+                duration: 1.2,
+                ease: 'back.out'
+            }, 0);
+
+            // Camera shake on impact
+            timeline.call(() => {
+                triggerCameraShake(8);
+            }, 1.2);
+        }
+
+        function triggerCameraShake(intensity = 5) {
+            if (gameState.cameraShakeActive) return;
+            gameState.cameraShakeActive = true;
+
+            const originalPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+            const timeline = gsap.timeline();
+
+            for (let i = 0; i < intensity; i++) {
+                timeline.to(camera.position, {
+                    x: originalPos.x + (Math.random() - 0.5) * 0.4,
+                    y: originalPos.y + (Math.random() - 0.5) * 0.4,
+                    z: originalPos.z + (Math.random() - 0.5) * 0.4,
+                    duration: 0.06,
+                    ease: 'none'
+                }, i * 0.06);
+            }
+
+            timeline.to(camera.position, {
+                x: originalPos.x,
+                y: originalPos.y,
+                z: originalPos.z,
+                duration: 0.1,
+                onComplete: () => {
+                    gameState.cameraShakeActive = false;
+                }
+            });
+        }
+
+        // ===== UTILITIES =====
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            console.log('Debug mode:', debugMode ? 'ON' : 'OFF');
+            if (debugMode) {
+                console.log('Player count:', gameState.players.length);
+                console.log('Selected cards:', Array.from(gameState.selectedCards));
+                console.log('Phase:', gameState.phase);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // ===== START =====
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

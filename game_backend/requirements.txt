@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+websockets
+gradio_client
+faster-whisper

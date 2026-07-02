@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAFIA 3SHI - PHASE 4: LEADER CONTROL PANEL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            font-family: 'Tajawal', Arial, sans-serif;
+            background: #0a0e27;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .top-hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+        }
+        
+        .game-title {
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff006e, #00f5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        
+        .leader-badge {
+            background: rgba(255, 215, 0, 0.15);
+            border: 2px solid #ffd700;
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: #ffd700;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .controls-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(0, 245, 255, 0.6);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: hintPulse 2s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes hintPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.9; }
+        }
+        
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            pointer-events: none;
+        }
+        
+        .countdown-text {
+            font-size: 120px;
+            font-weight: 900;
+            color: #ff006e;
+            text-shadow: 0 0 50px rgba(255, 1, 110, 0.8);
+            animation: countdownPulse 1s ease-in-out;
+        }
+        
+        @keyframes countdownPulse {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="ui">
+        <div class="top-hud">
+            <div class="game-title">🎭 MAFIA ARCADE 🎭</div>
+            <div class="leader-badge" id="leaderBadge">👑 ROOM LEADER</div>
+        </div>
+        <div class="controls-hint">👇 CLICK SETTINGS ICON TO OPEN LEADER PANEL</div>
+        <div class="countdown-overlay" id="countdownOverlay">
+            <div class="countdown-text" id="countdownText">3</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@r128/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // ===== GAME STATE =====
+        const gameState = {
+            isLeader: true,
+            isPanelOpen: false,
+            gameSettings: {
+                discussionTime: 60,
+                votingTime: 30,
+                nightTime: 20,
+                soundEnabled: true,
+                musicEnabled: true,
+                rolesEnabled: {
+                    mafia: true,
+                    doctor: true,
+                    sheriff: true
+                }
+            },
+            players: [],
+            gameStarting: false
+        };
+
+        // ===== INITIAL PLAYER DATA =====
+        const INITIAL_PLAYERS = [
+            { id: 0, name: 'Player 1', emoji: '🦁', isLeader: true },
+            { id: 1, name: 'Player 2', emoji: '🐉', isLeader: false },
+            { id: 2, name: 'Player 3', emoji: '🔥', isLeader: false },
+            { id: 3, name: 'Player 4', emoji: '🐺', isLeader: false },
+            { id: 4, name: 'Player 5', emoji: '🐯', isLeader: false }
+        ];
+
+        // ===== THREE.JS OBJECTS =====
+        let scene, camera, renderer;
+        let playerCards = [];
+        let hudGroup;
+        let settingsPanel;
+        let startButton;
+        let settingsButton;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        // ===== INITIALIZATION =====
+        function init() {
+            setupScene();
+            setupLights();
+            setupPlayers();
+            setupHUD();
+            setupEvents();
+            animate();
+
+            console.log('Phase 4: Leader Control Panel');
+            console.log('🎭 Click settings icon (⚙️) to open the leader panel');
+            console.log('🎮 Configure game settings with neon controls');
+            console.log('🚀 Click the RED arcade button to start the game!');
+        }
+
+        function setupScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e27);
+            scene.fog = new THREE.Fog(0x0a0e27, 150, 400);
+
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 3, 12);
+            camera.lookAt(0, 1.5, 0);
+
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('canvas'),
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            renderer.sortObjects = true;
+        }
+
+        function setupLights() {
+            const ambientLight = new THREE.AmbientLight(0x1a2a5c, 0.6);
+            scene.add(ambientLight);
+
+            const spotlight = new THREE.SpotLight(0x00f5ff, 1.8, 150, Math.PI / 2.5, 0.4, 2);
+            spotlight.position.set(0, 20, 10);
+            spotlight.target.position.set(0, 1.5, 0);
+            spotlight.castShadow = true;
+            spotlight.shadow.mapSize.width = 2048;
+            spotlight.shadow.mapSize.height = 2048;
+            scene.add(spotlight);
+            scene.add(spotlight.target);
+
+            const neonLight1 = new THREE.PointLight(0xff006e, 1.2, 80);
+            neonLight1.position.set(15, 5, 5);
+            scene.add(neonLight1);
+
+            const neonLight2 = new THREE.PointLight(0x00f5ff, 1.2, 80);
+            neonLight2.position.set(-15, 5, 5);
+            scene.add(neonLight2);
+        }
+
+        function setupPlayers() {
+            const positions = calculateSemiCirclePositions(INITIAL_PLAYERS.length);
+
+            INITIAL_PLAYERS.forEach((playerData, index) => {
+                const playerCard = createPlayerCard(playerData, positions[index]);
+                scene.add(playerCard);
+                playerCards.push(playerCard);
+                gameState.players.push({
+                    ...playerData,
+                    mesh: playerCard
+                });
+            });
+        }
+
+        function calculateSemiCirclePositions(count) {
+            const positions = [];
+            const radius = 6;
+            const baseHeight = 1.5;
+            const startAngle = Math.PI / 4;
+            const endAngle = (Math.PI * 3) / 4;
+            const angleStep = (endAngle - startAngle) / (count - 1);
+
+            for (let i = 0; i < count; i++) {
+                const angle = startAngle + angleStep * i;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                const scaleFactor = 0.85 + 0.15 * Math.cos((angle - Math.PI / 2) * 2);
+                const rotY = angle - Math.PI / 2;
+
+                positions.push({ x, y: baseHeight, z, rotY, scale: scaleFactor });
+            }
+
+            return positions;
+        }
+
+        function createPlayerCard(playerData, positionData) {
+            const cardGroup = new THREE.Group();
+            cardGroup.userData = { playerData };
+
+            const cardGeometry = new THREE.BoxGeometry(2.5, 3.6, 0.12);
+            const cardColor = playerData.isLeader ? 0xffd700 : 0x1a2a5c;
+            const cardMaterial = new THREE.MeshStandardMaterial({
+                color: cardColor,
+                roughness: 0.3,
+                metalness: 0.8,
+                emissive: cardColor,
+                emissiveIntensity: playerData.isLeader ? 0.4 : 0.25
+            });
+            const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
+            cardMesh.castShadow = true;
+            cardMesh.receiveShadow = true;
+            cardGroup.add(cardMesh);
+
+            // Card artwork
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 360;
+            const ctx = canvas.getContext('2d');
+
+            const gradient = ctx.createLinearGradient(0, 0, 256, 360);
+            gradient.addColorStop(0, playerData.isLeader ? '#3a3a1e' : '#1a2a5c');
+            gradient.addColorStop(1, playerData.isLeader ? '#4a4a2e' : '#2a4a9c');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 256, 360);
+
+            ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(playerData.emoji, 128, 140);
+
+            if (playerData.isLeader) {
+                ctx.font = 'bold 20px Tajawal, Arial';
+                ctx.fillStyle = '#ffd700';
+                ctx.fillText('👑 LEADER 👑', 128, 280);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const frontMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+
+            const frontGeometry = new THREE.PlaneGeometry(2.45, 3.5);
+            const frontMesh = new THREE.Mesh(frontGeometry, frontMaterial);
+            frontMesh.position.z = 0.1;
+            frontMesh.castShadow = true;
+            cardGroup.add(frontMesh);
+
+            // Leader crown glow
+            if (playerData.isLeader) {
+                const crownGeometry = new THREE.TorusGeometry(1.5, 0.15, 16, 100);
+                const crownMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffd700,
+                    emissive: 0xffd700,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                const crownMesh = new THREE.Mesh(crownGeometry, crownMaterial);
+                crownMesh.position.y = 2.2;
+                crownMesh.position.z = 1;
+                crownMesh.name = 'leaderCrown';
+                cardGroup.add(crownMesh);
+
+                // Pulse animation for leader
+                gsap.to(crownMaterial, {
+                    opacity: 0.3,
+                    duration: 1.5,
+                    yoyo: true,
+                    repeat: -1
+                });
+            }
+
+            const cardLight = new THREE.PointLight(playerData.isLeader ? 0xffd700 : 0xff006e, 0.8, 15);
+            cardLight.position.z = 1.5;
+            cardGroup.add(cardLight);
+
+            cardGroup.position.set(positionData.x, positionData.y, positionData.z);
+            cardGroup.rotation.y = positionData.rotY;
+            cardGroup.scale.set(positionData.scale, positionData.scale, positionData.scale);
+
+            return cardGroup;
+        }
+
+        // ===== HUD SETUP =====
+        function setupHUD() {
+            // Create camera-anchored HUD group
+            hudGroup = new THREE.Group();
+            hudGroup.position.copy(camera.position);
+            scene.add(hudGroup);
+
+            // Settings button (Top Right)
+            settingsButton = createSettingsIcon();
+            settingsButton.position.set(7, 2.5, -8);
+            hudGroup.add(settingsButton);
+
+            // Settings panel (initially hidden)
+            settingsPanel = createSettingsPanel();
+            settingsPanel.position.set(5, 1, -10);
+            settingsPanel.scale.set(0, 1, 1);
+            hudGroup.add(settingsPanel);
+
+            // Start button (Bottom Center)
+            startButton = createStartButton();
+            startButton.position.set(0, -1.5, -8);
+            hudGroup.add(startButton);
+        }
+
+        function createSettingsIcon() {
+            const group = new THREE.Group();
+
+            // Circular button
+            const buttonGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 32);
+            const buttonMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00f5ff,
+                emissive: 0x00f5ff,
+                emissiveIntensity: 0.5,
+                roughness: 0.2,
+                metalness: 0.9
+            });
+            const button = new THREE.Mesh(buttonGeometry, buttonMaterial);
+            button.castShadow = true;
+            button.userData = { type: 'settingsButton' };
+            group.add(button);
+
+            // Gear icon (canvas texture)
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#0a0e27';
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = '#00f5ff';
+            ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⚙️', 64, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const iconGeometry = new THREE.PlaneGeometry(0.5, 0.5);
+            const iconMaterial = new THREE.MeshBasicMaterial({ map: texture });
+            const icon = new THREE.Mesh(iconGeometry, iconMaterial);
+            icon.position.z = 0.05;
+            icon.scale.set(0.8, 0.8, 1);
+            group.add(icon);
+
+            group.userData = { interactive: true, type: 'settingsButton' };
+            return group;
+        }
+
+        function createSettingsPanel() {
+            const panelGroup = new THREE.Group();
+
+            // Panel background (frosted glass effect)
+            const panelGeometry = new THREE.PlaneGeometry(4, 3);
+            const panelMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0f1930,
+                transparent: true,
+                opacity: 0.85,
+                roughness: 0.7,
+                metalness: 0.2,
+                side: THREE.DoubleSide
+            });
+            const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+            panel.castShadow = true;
+            panelGroup.add(panel);
+
+            // Neon border
+            const borderGeometry = new THREE.BufferGeometry();
+            const borderPoints = [
+                new THREE.Vector3(-2, 1.5, 0.01),
+                new THREE.Vector3(2, 1.5, 0.01),
+                new THREE.Vector3(2, -1.5, 0.01),
+                new THREE.Vector3(-2, -1.5, 0.01),
+                new THREE.Vector3(-2, 1.5, 0.01)
+            ];
+            borderGeometry.setFromPoints(borderPoints);
+            const borderMaterial = new THREE.LineBasicMaterial({
+                color: 0x00f5ff,
+                linewidth: 3,
+                emissive: 0x00f5ff
+            });
+            const border = new THREE.Line(borderGeometry, borderMaterial);
+            border.position.z = 0.02;
+            panelGroup.add(border);
+
+            // Title
+            createTextIcon('⚙️ LEADER SETTINGS', -1.8, 1.2, panelGroup);
+
+            // Discussion Time Slider Label
+            createTextIcon('Discussion: 60s', -1.8, 0.7, panelGroup, 0.15);
+
+            // Energy bar for discussion time
+            const discussionBar = createEnergyBar(-1.8, 0.5);
+            discussionBar.userData = { settingKey: 'discussionTime', type: 'slider' };
+            panelGroup.add(discussionBar);
+
+            // Voting Time Slider Label
+            createTextIcon('Voting: 30s', -1.8, 0, panelGroup, 0.15);
+
+            // Energy bar for voting time
+            const votingBar = createEnergyBar(-1.8, -0.2);
+            votingBar.userData = { settingKey: 'votingTime', type: 'slider' };
+            panelGroup.add(votingBar);
+
+            // Sound toggle
+            createTextIcon('🔊 Sound', -1.8, -0.7, panelGroup, 0.15);
+            const soundToggle = createFlipSwitch(-1, -0.7);
+            soundToggle.userData = { settingKey: 'soundEnabled', type: 'toggle' };
+            panelGroup.add(soundToggle);
+
+            // Music toggle
+            createTextIcon('🎵 Music', 0.5, -0.7, panelGroup, 0.15);
+            const musicToggle = createFlipSwitch(1.5, -0.7);
+            musicToggle.userData = { settingKey: 'musicEnabled', type: 'toggle' };
+            panelGroup.add(musicToggle);
+
+            // Role selection
+            createTextIcon('Roles:', -1.8, -1.2, panelGroup, 0.15);
+            
+            const roleMafia = createRoleMiniCard('mafioso', 'mafia', -1, -1.2);
+            roleMafia.userData = { roleKey: 'mafia', type: 'roleToggle' };
+            panelGroup.add(roleMafia);
+
+            const roleDoctor = createRoleMiniCard('doctor', 'doctor', 0.2, -1.2);
+            roleDoctor.userData = { roleKey: 'doctor', type: 'roleToggle' };
+            panelGroup.add(roleDoctor);
+
+            const roleSheriff = createRoleMiniCard('sheriff', 'sheriff', 1.4, -1.2);
+            roleSheriff.userData = { roleKey: 'sheriff', type: 'roleToggle' };
+            panelGroup.add(roleSheriff);
+
+            // Close button (X)
+            const closeButton = createCloseButton();
+            closeButton.position.set(1.9, 1.3, 0.02);
+            closeButton.userData = { type: 'closeButton' };
+            panelGroup.add(closeButton);
+
+            panelGroup.userData = { type: 'settingsPanel' };
+            return panelGroup;
+        }
+
+        function createTextIcon(text, x, y, parentGroup, fontSize = 0.2) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = 'transparent';
+            ctx.clearRect(0, 0, 512, 128);
+
+            ctx.font = `bold ${Math.floor(fontSize * 500)}px Tajawal, Arial`;
+            ctx.fillStyle = '#00f5ff';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 20, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const geometry = new THREE.PlaneGeometry(fontSize * 2.5, fontSize);
+            const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, y, 0.03);
+            parentGroup.add(mesh);
+
+            return mesh;
+        }
+
+        function createEnergyBar(x, y) {
+            const group = new THREE.Group();
+
+            // Background bar
+            const bgGeometry = new THREE.PlaneGeometry(2.2, 0.25);
+            const bgMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0a0e27,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            const bgBar = new THREE.Mesh(bgGeometry, bgMaterial);
+            bgBar.position.set(0, 0, 0.01);
+            group.add(bgBar);
+
+            // Energy bar (fill)
+            const fillGeometry = new THREE.PlaneGeometry(2.0, 0.2);
+            const fillMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00f5ff,
+                emissive: 0x00f5ff,
+                emissiveIntensity: 0.6,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            const fillBar = new THREE.Mesh(fillGeometry, fillMaterial);
+            fillBar.position.set(-0.1, 0, 0.02);
+            group.add(fillBar);
+            group.userData.fillBar = fillBar;
+
+            // Neon glow outline
+            const borderGeometry = new THREE.BufferGeometry();
+            const borderPoints = [
+                new THREE.Vector3(-1.1, 0.125, 0.03),
+                new THREE.Vector3(1.1, 0.125, 0.03),
+                new THREE.Vector3(1.1, -0.125, 0.03),
+                new THREE.Vector3(-1.1, -0.125, 0.03),
+                new THREE.Vector3(-1.1, 0.125, 0.03)
+            ];
+            borderGeometry.setFromPoints(borderPoints);
+            const borderMaterial = new THREE.LineBasicMaterial({
+                color: 0x00f5ff,
+                linewidth: 2
+            });
+            const border = new THREE.Line(borderGeometry, borderMaterial);
+            group.add(border);
+
+            group.position.set(x, y, 0);
+            group.userData.interactive = true;
+            return group;
+        }
+
+        function createFlipSwitch(x, y) {
+            const group = new THREE.Group();
+
+            // Switch body
+            const switchGeometry = new THREE.BoxGeometry(0.4, 0.15, 0.1);
+            const switchMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1a2a5c,
+                roughness: 0.3,
+                metalness: 0.7
+            });
+            const switchBody = new THREE.Mesh(switchGeometry, switchMaterial);
+            switchBody.castShadow = true;
+            group.add(switchBody);
+
+            // Toggle lever
+            const leverGeometry = new THREE.BoxGeometry(0.08, 0.12, 0.08);
+            const leverMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00f5ff,
+                emissive: 0x00f5ff,
+                emissiveIntensity: 0.6,
+                roughness: 0.2,
+                metalness: 0.9
+            });
+            const lever = new THREE.Mesh(leverGeometry, leverMaterial);
+            lever.position.set(0.08, 0.05, 0.06);
+            lever.castShadow = true;
+            group.add(lever);
+            group.userData.lever = lever;
+            group.userData.isOn = true;
+
+            group.position.set(x, y, 0);
+            group.userData.interactive = true;
+            return group;
+        }
+
+        function createRoleMiniCard(emoji, roleKey, x, y) {
+            const group = new THREE.Group();
+
+            const cardGeometry = new THREE.BoxGeometry(0.5, 0.65, 0.08);
+            const cardMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1a2a5c,
+                roughness: 0.3,
+                metalness: 0.8,
+                emissive: 0x2a4a9c,
+                emissiveIntensity: 0.3
+            });
+            const card = new THREE.Mesh(cardGeometry, cardMaterial);
+            card.castShadow = true;
+            group.add(card);
+
+            // Role emoji
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 160;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#1a2a5c';
+            ctx.fillRect(0, 0, 128, 160);
+            ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            if (emoji === 'mafioso') ctx.fillText('🔫', 64, 64);
+            else if (emoji === 'doctor') ctx.fillText('⚕️', 64, 64);
+            else if (emoji === 'sheriff') ctx.fillText('🔖', 64, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const frontGeometry = new THREE.PlaneGeometry(0.48, 0.63);
+            const frontMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+            const frontMesh = new THREE.Mesh(frontGeometry, frontMaterial);
+            frontMesh.position.z = 0.045;
+            group.add(frontMesh);
+
+            group.position.set(x, y, 0);
+            group.userData.interactive = true;
+            group.userData.roleKey = roleKey;
+            group.userData.enabled = true;
+            return group;
+        }
+
+        function createCloseButton() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#0a0e27';
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.strokeStyle = '#ff006e';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(20, 20);
+            ctx.lineTo(108, 108);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(108, 20);
+            ctx.lineTo(20, 108);
+            ctx.stroke();
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const geometry = new THREE.PlaneGeometry(0.3, 0.3);
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+            const mesh = new THREE.Mesh(geometry, material);
+
+            return mesh;
+        }
+
+        function createStartButton() {
+            const group = new THREE.Group();
+
+            // Large red button base
+            const baseGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.15, 32);
+            const baseMaterial = new THREE.MeshStandardMaterial({
+                color: 0xCC0000,
+                emissive: 0xFF0000,
+                emissiveIntensity: 0.8,
+                roughness: 0.1,
+                metalness: 0.9
+            });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.castShadow = true;
+            base.userData = { type: 'startButtonBase' };
+            group.add(base);
+
+            // Button top (domed)
+            const topGeometry = new THREE.SphereGeometry(0.75, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const topMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFF0000,
+                emissive: 0xFF3333,
+                emissiveIntensity: 0.9,
+                roughness: 0.15,
+                metalness: 0.85
+            });
+            const top = new THREE.Mesh(topGeometry, topMaterial);
+            top.position.y = 0.08;
+            top.castShadow = true;
+            group.add(top);
+
+            // START text
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = 'transparent';
+            ctx.clearRect(0, 0, 256, 256);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 60px Tajawal, Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('START', 128, 120);
+            ctx.font = '24px Tajawal, Arial';
+            ctx.fillText('🎮 GAME', 128, 170);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const textGeometry = new THREE.PlaneGeometry(1.2, 1.2);
+            const textMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            textMesh.position.z = 0.6;
+            group.add(textMesh);
+
+            // Glow point light
+            const buttonLight = new THREE.PointLight(0xFF0000, 1.5, 20);
+            buttonLight.position.set(0, 0.5, 1);
+            group.add(buttonLight);
+
+            group.userData = { interactive: true, type: 'startButton' };
+            return group;
+        }
+
+        // ===== EVENT HANDLING =====
+        function setupEvents() {
+            document.addEventListener('click', onCanvasClick);
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onCanvasClick(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Add interactive objects to array
+            const interactiveObjects = getInteractiveObjects(hudGroup);
+            const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+            if (intersects.length > 0) {
+                const clicked = intersects[0].object;
+                handleHUDClick(clicked);
+            }
+        }
+
+        function getInteractiveObjects(group) {
+            const interactive = [];
+            group.traverse(child => {
+                if (child.userData && child.userData.interactive) {
+                    interactive.push(child);
+                }
+            });
+            return interactive;
+        }
+
+        function handleHUDClick(clickedObject) {
+            // Find parent with userData
+            let parent = clickedObject;
+            while (parent && !parent.userData.type) {
+                parent = parent.parent;
+            }
+
+            if (!parent) return;
+
+            const type = parent.userData.type;
+
+            if (type === 'settingsButton') {
+                toggleSettingsPanel();
+            } else if (type === 'closeButton') {
+                toggleSettingsPanel();
+            } else if (type === 'startButton') {
+                startGame();
+            } else if (parent.userData.type === 'toggle') {
+                toggleSwitch(parent);
+            } else if (parent.userData.type === 'roleToggle') {
+                toggleRole(parent);
+            }
+        }
+
+        function toggleSettingsPanel() {
+            gameState.isPanelOpen = !gameState.isPanelOpen;
+
+            if (gameState.isPanelOpen) {
+                gsap.to(settingsPanel.scale, {
+                    x: 1,
+                    duration: 0.6,
+                    ease: 'back.out'
+                });
+            } else {
+                gsap.to(settingsPanel.scale, {
+                    x: 0,
+                    duration: 0.4,
+                    ease: 'back.in'
+                });
+            }
+        }
+
+        function toggleSwitch(switchGroup) {
+            const lever = switchGroup.userData.lever;
+            switchGroup.userData.isOn = !switchGroup.userData.isOn;
+
+            const targetRotation = switchGroup.userData.isOn ? 0.2 : -0.2;
+            gsap.to(lever.rotation, {
+                z: targetRotation,
+                duration: 0.3,
+                ease: 'back.out'
+            });
+
+            // Update game state
+            const settingKey = null;
+            if (switchGroup.userData.settingKey) {
+                gameState.gameSettings[switchGroup.userData.settingKey] = switchGroup.userData.isOn;
+            }
+        }
+
+        function toggleRole(roleCard) {
+            roleCard.userData.enabled = !roleCard.userData.enabled;
+            const roleKey = roleCard.userData.roleKey;
+
+            gameState.gameSettings.rolesEnabled[roleKey] = roleCard.userData.enabled;
+
+            // Visual feedback: change color
+            const cardMesh = roleCard.children[0];
+            const targetColor = roleCard.userData.enabled ? 0x2a4a9c : 0x4a4a4a;
+
+            gsap.to(cardMesh.material, {
+                color: new THREE.Color(targetColor),
+                duration: 0.3
+            });
+
+            // Scale pulse
+            gsap.to(roleCard.scale, {
+                x: 1.1,
+                y: 1.1,
+                duration: 0.2,
+                yoyo: true,
+                repeat: 1
+            });
+        }
+
+        function startGame() {
+            if (gameState.gameStarting) return;
+            gameState.gameStarting = true;
+
+            // Button depression animation
+            gsap.timeline()
+                .to(startButton.position, {
+                    y: -1.6,
+                    duration: 0.2,
+                    ease: 'power2.in'
+                })
+                .to(startButton.position, {
+                    y: -1.5,
+                    duration: 0.2,
+                    ease: 'power2.out'
+                }, 0.2);
+
+            // Countdown sequence
+            const countdownOverlay = document.getElementById('countdownOverlay');
+            countdownOverlay.style.display = 'flex';
+
+            // Count down from 5 to "GO"
+            const counts = ['5', '4', '3', '2', '1', '🚀'];
+            let currentCount = 0;
+
+            const countdownInterval = setInterval(() => {
+                const countdownText = document.getElementById('countdownText');
+                countdownText.textContent = counts[currentCount];
+
+                gsap.fromTo(
+                    countdownText,
+                    { scale: 0.5, opacity: 0 },
+                    { scale: 1.2, opacity: 0, duration: 1, ease: 'power2.out' }
+                );
+
+                currentCount++;
+                if (currentCount >= counts.length) {
+                    clearInterval(countdownInterval);
+                    setTimeout(() => {
+                        countdownOverlay.style.display = 'none';
+                        console.log('✅ GAME STARTING NOW!');
+                        console.log('Settings:', gameState.gameSettings);
+                        gameState.gameStarting = false;
+                    }, 500);
+                }
+            }, 1000);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function updateHUDPosition() {
+            if (hudGroup) {
+                hudGroup.position.copy(camera.position);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateHUDPosition();
+            renderer.render(scene, camera);
+        }
+
+        // ===== START =====
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

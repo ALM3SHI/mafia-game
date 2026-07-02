@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAFIA 3SHI - ARCADE MASTER | THE COMPLETE EXPERIENCE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            font-family: 'Tajawal', Arial, sans-serif;
+            background: #0a0e27;
+            overflow: hidden;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ===== MASTER HUD SYSTEM ===== */
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 1, 110, 0.15);
+            border: 2px solid #ff006e;
+            border-radius: 50%;
+            color: #ff006e;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 150;
+            box-shadow: 0 0 15px rgba(255, 1, 110, 0.3);
+        }
+
+        .back-button.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .back-button:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 25px rgba(255, 1, 110, 0.6);
+        }
+
+        /* ===== STATE-SPECIFIC HEADERS ===== */
+        .state-header {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            right: 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .state-header.active {
+            opacity: 1;
+        }
+
+        .game-logo {
+            font-size: 36px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff006e, #00f5ff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(255, 1, 110, 0.4);
+        }
+
+        .state-badge {
+            background: rgba(0, 245, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid #00f5ff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: #00f5ff;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+        }
+
+        /* ===== GLASSMORPHISM PANELS ===== */
+        .glass-panel {
+            background: rgba(10, 20, 40, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 245, 255, 0.1);
+        }
+
+        /* ===== HOLOGRAPHIC SETTINGS PANEL ===== */
+        .holographic-panel {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%) perspective(1200px) rotateY(-15deg);
+            width: 380px;
+            background: rgba(0, 20, 40, 0.4);
+            border: 2px solid #00f5ff;
+            border-radius: 20px;
+            padding: 30px;
+            color: #00f5ff;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 0 40px rgba(0, 245, 255, 0.3),
+                inset 0 0 30px rgba(0, 245, 255, 0.08),
+                0 0 80px rgba(255, 1, 110, 0.1);
+            pointer-events: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s ease;
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 120;
+        }
+
+        .holographic-panel.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) perspective(1200px) rotateY(-8deg);
+        }
+
+        .holographic-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .holographic-panel::-webkit-scrollbar-thumb {
+            background: rgba(0, 245, 255, 0.5);
+            border-radius: 3px;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.6);
+            border-bottom: 2px solid rgba(0, 245, 255, 0.3);
+            padding-bottom: 15px;
+        }
+
+        .setting-group {
+            margin-bottom: 18px;
+        }
+
+        .setting-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+
+        .neon-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(0, 245, 255, 0.15);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .neon-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00f5ff, #ff006e);
+            cursor: pointer;
+            box-shadow: 0 0 12px #00f5ff;
+            border: 2px solid #00f5ff;
+        }
+
+        .neon-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00f5ff, #ff006e);
+            cursor: pointer;
+            box-shadow: 0 0 12px #00f5ff;
+            border: 2px solid #00f5ff;
+        }
+
+        .toggle-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toggle-checkbox {
+            width: 46px;
+            height: 24px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .toggle-checkbox input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 245, 255, 0.15);
+            border: 1px solid #00f5ff;
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 2px;
+            background: #00f5ff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00f5ff;
+            transition: 0.3s;
+        }
+
+        input:checked + .toggle-slider {
+            background: rgba(0, 245, 255, 0.3);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        .action-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .glass-button {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(0, 245, 255, 0.05));
+            border: 1.5px solid #00f5ff;
+            color: #00f5ff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 11px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .glass-button:hover {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(0, 245, 255, 0.15));
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* ===== STORE/CAROUSEL PANEL ===== */
+        .carousel-container {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 900px;
+            background: rgba(10, 20, 40, 0.4);
+            backdrop-filter: blur(15px);
+            border: 2px solid #00f5ff;
+            border-radius: 20px;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s ease;
+            z-index: 110;
+        }
+
+        .carousel-container.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .carousel-label {
+            color: #00f5ff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .card-showcase {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            min-height: 100px;
+        }
+
+        /* ===== COUNTDOWN OVERLAY ===== */
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 250;
+            pointer-events: none;
+        }
+
+        .countdown-text {
+            font-size: 140px;
+            font-weight: 900;
+            color: #ff006e;
+            text-shadow: 0 0 60px rgba(255, 1, 110, 0.9);
+            animation: countdownPulse 1s ease-in-out;
+        }
+
+        @keyframes countdownPulse {
+            0% {
+                transform: scale(0.4);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.3);
+                opacity: 0;
+            }
+        }
+
+        /* ===== EYELIDS (SLEEP ANIMATION) ===== */
+        #eyelids {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 300;
+            pointer-events: none;
+        }
+
+        .lid {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: #0a0e27;
+            transition: transform 1.5s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+
+        .lid.top {
+            top: 0;
+            transform: translateY(-100%);
+            border-radius: 0 0 50% 50% / 0 0 20% 20%;
+        }
+
+        .lid.bottom {
+            bottom: 0;
+            transform: translateY(100%);
+            border-radius: 50% 50% 0 0 / 20% 20% 0 0;
+        }
+
+        #eyelids.sleeping .lid.top {
+            transform: translateY(-10%);
+        }
+
+        #eyelids.sleeping .lid.bottom {
+            transform: translateY(10%);
+        }
+
+        /* ===== HINTS & STATUS ===== */
+        .status-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(0, 245, 255, 0.6);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: hintPulse 2.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes hintPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.95; }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1200px) {
+            .holographic-panel {
+                width: 320px;
+                right: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <!-- MASTER UI CONTAINER -->
+    <div id="ui">
+        <!-- BACK BUTTON (Always Available) -->
+        <div class="back-button" id="backButton" onclick="goBack()">←</div>
+
+        <!-- HOME STATE -->
+        <div class="state-header" id="homeHeader">
+            <div class="game-logo">🎭 M4FI4 ARCADE MASTER 🎭</div>
+            <div class="state-badge">HOME</div>
+        </div>
+
+        <!-- LOBBY STATE -->
+        <div class="state-header" id="lobbyHeader">
+            <div class="game-logo">🎭 ARENA LOBBY 🎭</div>
+            <div class="state-badge">PLAYERS: <span id="playerCount">5</span></div>
+        </div>
+
+        <!-- STORE STATE -->
+        <div class="state-header" id="storeHeader">
+            <div class="game-logo">🛍️ CARD STORE 🛍️</div>
+            <div class="state-badge">💰 COINS: <span id="coinCount">1000</span></div>
+        </div>
+
+        <!-- GAME STATE -->
+        <div class="state-header" id="gameHeader">
+            <div class="game-logo">🎮 ACTIVE GAME 🎮</div>
+            <div class="state-badge"><span id="phaseIndicator">NIGHT PHASE</span></div>
+        </div>
+
+        <!-- HOLOGRAPHIC SETTINGS PANEL (Only in LOBBY) -->
+        <div class="holographic-panel" id="settingsPanel">
+            <div class="panel-title">⚙️ Game Configuration</div>
+
+            <div class="setting-group">
+                <div class="setting-label">Discussion Time: <span id="discussionValue">60</span>s</div>
+                <input type="range" min="30" max="120" value="60" class="neon-slider" onchange="updateSetting('discussionTime', this.value)">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Voting Time: <span id="votingValue">30</span>s</div>
+                <input type="range" min="15" max="60" value="30" class="neon-slider" onchange="updateSetting('votingTime', this.value)">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Night Time: <span id="nightValue">20</span>s</div>
+                <input type="range" min="10" max="45" value="20" class="neon-slider" onchange="updateSetting('nightTime', this.value)">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">🔊 Sound Effects</div>
+                <label class="toggle-checkbox">
+                    <input type="checkbox" checked onchange="updateSetting('soundEnabled', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">🎵 Background Music</div>
+                <label class="toggle-checkbox">
+                    <input type="checkbox" checked onchange="updateSetting('musicEnabled', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="action-buttons">
+                <button class="glass-button" onclick="toggleSettingsPanel()">Close</button>
+                <button class="glass-button" onclick="startGameFromLobby()">START</button>
+            </div>
+        </div>
+
+        <!-- CAROUSEL/STORE (Only in STORE) -->
+        <div class="carousel-container" id="carouselContainer">
+            <div class="carousel-label">✨ Swipe to Browse | Click to Purchase ✨</div>
+            <div class="card-showcase" id="cardShowcase"></div>
+        </div>
+
+        <!-- COUNTDOWN OVERLAY -->
+        <div class="countdown-overlay" id="countdownOverlay">
+            <div class="countdown-text" id="countdownText">5</div>
+        </div>
+
+        <!-- HINTS -->
+        <div class="status-hint" id="statusHint">⚙️ Press S to Open Settings</div>
+    </div>
+
+    <!-- EYELIDS (Sleep Animation Overlay) -->
+    <div id="eyelids">
+        <div class="lid top"></div>
+        <div class="lid bottom"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // ===== UNIFIED GAME STATE MANAGEMENT =====
+        const GAME_STATES = {
+            HOME: 'HOME',
+            LOBBY: 'LOBBY',
+            STORE: 'STORE',
+            GAME_START: 'GAME_START',
+            GAME_ACTIVE: 'GAME_ACTIVE'
+        };
+
+        const stateHistory = [];
+        let currentState = GAME_STATES.HOME;
+
+        const gameState = {
+            currentState: GAME_STATES.HOME,
+            isLeader: true,
+            isPanelOpen: false,
+            isSleeping: false,
+            coins: 1000,
+            gameSettings: {
+                discussionTime: 60,
+                votingTime: 30,
+                nightTime: 20,
+                soundEnabled: true,
+                musicEnabled: true,
+                rolesEnabled: {
+                    mafia: true,
+                    doctor: true,
+                    sheriff: true
+                }
+            },
+            players: [],
+            gameStarting: false
+        };
+
+        const INITIAL_PLAYERS = [
+            { id: 0, name: 'Player 1', emoji: '🦁', isLeader: true, color: 0xffd700 },
+            { id: 1, name: 'Player 2', emoji: '🐉', isLeader: false, color: 0xff006e },
+            { id: 2, name: 'Player 3', emoji: '🔥', isLeader: false, color: 0xff6347 },
+            { id: 3, name: 'Player 4', emoji: '🐺', isLeader: false, color: 0x4169e1 },
+            { id: 4, name: 'Player 5', emoji: '🐯', isLeader: false, color: 0xff8c00 }
+        ];
+
+        // ===== THREE.JS OBJECTS =====
+        let scene, camera, renderer;
+        let playerCards = [];
+        let storeCards = [];
+        let environmentGroup;
+        let cameraStartPos = { x: 0, y: 3, z: 12 };
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        // ===== INITIALIZATION =====
+        function init() {
+            setupScene();
+            setupLights();
+            setupEnvironment();
+            setupEvents();
+            setupKeyboard();
+            transitionToState(GAME_STATES.HOME);
+            animate();
+
+            console.log('🎭 ARCADE MASTER - UNIFIED GAME ENGINE INITIALIZED');
+            console.log('📍 Current State:', currentState);
+            console.log('🎮 Press S to toggle settings | Arrow keys to navigate');
+        }
+
+        function setupScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e27);
+            scene.fog = new THREE.Fog(0x0a0e27, 200, 500);
+
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(cameraStartPos.x, cameraStartPos.y, cameraStartPos.z);
+            camera.lookAt(0, 1.5, 0);
+
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('canvas'),
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+        }
+
+        function setupLights() {
+            // Ambient light
+            const ambientLight = new THREE.AmbientLight(0x1a2a5c, 0.7);
+            scene.add(ambientLight);
+
+            // Main spotlight
+            const spotlight = new THREE.SpotLight(0x00f5ff, 2, 200, Math.PI / 2.5, 0.3, 2);
+            spotlight.position.set(0, 25, 15);
+            spotlight.target.position.set(0, 1.5, 0);
+            spotlight.castShadow = true;
+            spotlight.shadow.mapSize.width = 2048;
+            spotlight.shadow.mapSize.height = 2048;
+            scene.add(spotlight);
+            scene.add(spotlight.target);
+
+            // Neon accent lights
+            const neonLight1 = new THREE.PointLight(0xff006e, 1.5, 120);
+            neonLight1.position.set(20, 8, 10);
+            scene.add(neonLight1);
+
+            const neonLight2 = new THREE.PointLight(0x00f5ff, 1.5, 120);
+            neonLight2.position.set(-20, 8, 10);
+            scene.add(neonLight2);
+
+            const neonLight3 = new THREE.PointLight(0xffd700, 1, 80);
+            neonLight3.position.set(0, 6, 30);
+            scene.add(neonLight3);
+        }
+
+        function setupEnvironment() {
+            environmentGroup = new THREE.Group();
+            scene.add(environmentGroup);
+
+            // Create play area (table) - visible in LOBBY
+            createPlayArea();
+        }
+
+        function createPlayArea() {
+            // Table surface
+            const tableGeometry = new THREE.CylinderGeometry(8, 8, 0.3, 64);
+            const tableMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1a1a3e,
+                metalness: 0.6,
+                roughness: 0.4,
+                emissive: 0x0f1428,
+                emissiveIntensity: 0.3
+            });
+            const table = new THREE.Mesh(tableGeometry, tableMaterial);
+            table.castShadow = true;
+            table.receiveShadow = true;
+            environmentGroup.add(table);
+
+            // Table rim - neon border
+            const rimGeometry = new THREE.TorusGeometry(8.2, 0.3, 64, 100);
+            const rimMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00f5ff,
+                emissive: 0x00f5ff,
+                emissiveIntensity: 0.4,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+            const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+            rim.position.y = 0.2;
+            environmentGroup.add(rim);
+
+            // Light above table
+            const tableLight = new THREE.PointLight(0x00f5ff, 0.8, 50);
+            tableLight.position.set(0, 5, 0);
+            environmentGroup.add(tableLight);
+        }
+
+        // ===== STATE TRANSITION SYSTEM =====
+        function transitionToState(newState) {
+            if (newState === currentState) return;
+
+            // Hide all state headers
+            document.getElementById('homeHeader').classList.remove('active');
+            document.getElementById('lobbyHeader').classList.remove('active');
+            document.getElementById('storeHeader').classList.remove('active');
+            document.getElementById('gameHeader').classList.remove('active');
+
+            // Hide all panels
+            document.getElementById('settingsPanel').classList.remove('visible');
+            document.getElementById('carouselContainer').classList.remove('visible');
+
+            // Update history
+            stateHistory.push(currentState);
+            currentState = newState;
+            gameState.currentState = newState;
+
+            // Show back button if not in HOME
+            const backBtn = document.getElementById('backButton');
+            if (newState === GAME_STATES.HOME) {
+                backBtn.classList.remove('visible');
+            } else {
+                backBtn.classList.add('visible');
+            }
+
+            // Apply state-specific changes
+            switch (newState) {
+                case GAME_STATES.HOME:
+                    transitionCamera({ x: 0, y: 3, z: 12 }, 1.5);
+                    document.getElementById('homeHeader').classList.add('active');
+                    document.getElementById('statusHint').textContent = '👇 Navigate to LOBBY to Start Playing';
+                    setupHomeEnvironment();
+                    break;
+
+                case GAME_STATES.LOBBY:
+                    transitionCamera({ x: 0, y: 3, z: 12 }, 1.5);
+                    document.getElementById('lobbyHeader').classList.add('active');
+                    document.getElementById('statusHint').textContent = '⚙️ Press S to Open Settings | Click Players';
+                    setupPlayers();
+                    setupLobbyUI();
+                    break;
+
+                case GAME_STATES.STORE:
+                    transitionCamera({ x: 0, y: 2, z: 20 }, 2);
+                    document.getElementById('storeHeader').classList.add('active');
+                    document.getElementById('statusHint').textContent = '🛍️ Click Cards to Purchase | Drag to Scroll';
+                    setupStore();
+                    document.getElementById('carouselContainer').classList.add('visible');
+                    break;
+
+                case GAME_STATES.GAME_START:
+                    document.getElementById('gameHeader').classList.add('active');
+                    triggerSleepAnimation();
+                    startGameCountdown();
+                    break;
+
+                case GAME_STATES.GAME_ACTIVE:
+                    document.getElementById('gameHeader').classList.add('active');
+                    document.getElementById('statusHint').textContent = '🎮 GAME IN PROGRESS';
+                    transitionCamera({ x: 0, y: 4, z: 14 }, 1);
+                    break;
+            }
+
+            console.log(`📍 Transitioned to: ${newState}`);
+        }
+
+        // ===== CAMERA TWEENING =====
+        function transitionCamera(target, duration = 2) {
+            gsap.to(camera.position, {
+                x: target.x,
+                y: target.y,
+                z: target.z,
+                duration: duration,
+                ease: 'power2.inOut',
+                onUpdate: () => {
+                    camera.lookAt(0, 1.5, 0);
+                }
+            });
+        }
+
+        // ===== STATE-SPECIFIC SETUP FUNCTIONS =====
+        function setupHomeEnvironment() {
+            // Clear old cards
+            playerCards.forEach(card => scene.remove(card));
+            playerCards = [];
+
+            // Create floating welcome cards
+            const welcomeEmojis = ['🎭', '🎮', '🏆', '💎', '🔥'];
+            welcomeEmojis.forEach((emoji, i) => {
+                const card = createSimpleCard(emoji, i);
+                scene.add(card);
+                playerCards.push(card);
+
+                // Floating animation
+                gsap.to(card.position, {
+                    y: card.position.y + 0.5,
+                    duration: 2 + i * 0.3,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'sine.inOut'
+                });
+            });
+        }
+
+        function setupLobbyUI() {
+            if (gameState.isLeader) {
+                // Automatically show settings hint for leader
+                document.getElementById('statusHint').innerHTML = '⚙️ Press S to Configure Game Settings';
+            }
+        }
+
+        function setupPlayers() {
+            // Clear old cards
+            playerCards.forEach(card => scene.remove(card));
+            playerCards = [];
+
+            const positions = calculateSemiCirclePositions(INITIAL_PLAYERS.length);
+
+            INITIAL_PLAYERS.forEach((playerData, index) => {
+                const playerCard = createPremiumCard(playerData);
+                scene.add(playerCard);
+                playerCards.push(playerCard);
+                gameState.players.push({ ...playerData, mesh: playerCard });
+
+                // Staggered summoning
+                setTimeout(() => {
+                    summonCardWithImpact(playerCard, positions[index], index);
+                }, index * 150);
+            });
+        }
+
+        function setupStore() {
+            storeCards = [];
+            const storeShowcase = document.getElementById('cardShowcase');
+            storeShowcase.innerHTML = '';
+
+            // Create 5 store cards
+            for (let i = 0; i < 5; i++) {
+                const storeName = ['Guardian', 'Specter', 'Inferno', 'Mystic', 'Titan'][i];
+                const storeEmoji = ['🛡️', '👻', '🔥', '🌙', '💪'][i];
+                const storePrice = (i + 1) * 200;
+
+                const cardDiv = document.createElement('div');
+                cardDiv.style.cssText = `
+                    background: rgba(0, 245, 255, 0.1);
+                    border: 2px solid #00f5ff;
+                    border-radius: 10px;
+                    padding: 15px;
+                    text-align: center;
+                    cursor: pointer;
+                    min-width: 120px;
+                    transition: all 0.3s ease;
+                `;
+                cardDiv.innerHTML = `
+                    <div style="font-size: 40px; margin-bottom: 10px;">${storeEmoji}</div>
+                    <div style="color: #ffd700; font-weight: bold; font-size: 14px;">${storeName}</div>
+                    <div style="color: #00f5ff; font-size: 12px; margin-top: 8px;">💰 ${storePrice}</div>
+                `;
+                cardDiv.onclick = () => purchaseCard(storePrice, storeName);
+                cardDiv.onmouseover = () => {
+                    cardDiv.style.background = 'rgba(0, 245, 255, 0.25)';
+                    cardDiv.style.boxShadow = '0 0 20px rgba(0, 245, 255, 0.5)';
+                };
+                cardDiv.onmouseout = () => {
+                    cardDiv.style.background = 'rgba(0, 245, 255, 0.1)';
+                    cardDiv.style.boxShadow = 'none';
+                };
+                storeShowcase.appendChild(cardDiv);
+            }
+        }
+
+        // ===== PREMIUM CARD CREATION =====
+        function createPremiumCard(playerData) {
+            const cardGroup = new THREE.Group();
+            cardGroup.userData = { playerData };
+
+            const cardGeometry = new THREE.BoxGeometry(2.8, 4, 0.2);
+            const cardMaterial = new THREE.MeshStandardMaterial({
+                color: playerData.color,
+                metalness: 0.85,
+                roughness: 0.15,
+                emissive: playerData.color,
+                emissiveIntensity: 0.4
+            });
+            const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
+            cardMesh.castShadow = true;
+            cardMesh.receiveShadow = true;
+            cardGroup.add(cardMesh);
+
+            // Neon border
+            const edges = new THREE.EdgesGeometry(cardGeometry);
+            const neonBorderColor = playerData.isLeader ? 0xffd700 : playerData.color;
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: neonBorderColor,
+                linewidth: 3
+            });
+            const border = new THREE.LineSegments(edges, lineMaterial);
+            border.position.z = 0.12;
+            cardGroup.add(border);
+
+            // Canvas texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 560;
+            canvas.height = 800;
+            const ctx = canvas.getContext('2d');
+
+            const gradient = ctx.createLinearGradient(0, 0, 560, 800);
+            gradient.addColorStop(0, '#1a1a3e');
+            gradient.addColorStop(0.5, '#2a3a6e');
+            gradient.addColorStop(1, '#1a1a3e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 560, 800);
+
+            // Shimmer
+            for (let i = 0; i < 40; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.08 - i * 0.002})`;
+                ctx.fillRect(i * 14, 0, 3, 800);
+            }
+
+            ctx.strokeStyle = playerData.isLeader ? '#ffd700' : playerData.color;
+            ctx.lineWidth = 8;
+            ctx.strokeRect(20, 20, 520, 760);
+
+            ctx.font = 'bold 36px Tajawal, Arial';
+            ctx.fillStyle = playerData.isLeader ? '#ffd700' : '#00f5ff';
+            ctx.textAlign = 'center';
+            ctx.fillText(playerData.isLeader ? '👑 LEADER' : '🎭 PLAYER', 280, 70);
+
+            ctx.font = 'bold 280px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(playerData.emoji, 280, 300);
+
+            ctx.font = 'bold 40px Tajawal, Arial';
+            ctx.fillStyle = '#ffd700';
+            ctx.textAlign = 'center';
+            ctx.fillText(playerData.name, 280, 600);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const frontGeometry = new THREE.PlaneGeometry(2.75, 3.95);
+            const frontMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.3,
+                metalness: 0.6
+            });
+            const frontMesh = new THREE.Mesh(frontGeometry, frontMaterial);
+            frontMesh.position.z = 0.12;
+            cardGroup.add(frontMesh);
+
+            const cardLight = new THREE.PointLight(neonBorderColor, 1.2, 20);
+            cardLight.position.z = 2;
+            cardGroup.add(cardLight);
+
+            return cardGroup;
+        }
+
+        function createSimpleCard(emoji, index) {
+            const group = new THREE.Group();
+            const geometry = new THREE.BoxGeometry(2, 2.8, 0.15);
+            const material = new THREE.MeshStandardMaterial({
+                color: [0xff006e, 0x00f5ff, 0xffd700, 0xff6347, 0x4169e1][index],
+                metalness: 0.7,
+                roughness: 0.3
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            group.add(mesh);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 560;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a3e';
+            ctx.fillRect(0, 0, 400, 560);
+            ctx.font = 'bold 200px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 200, 280);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const frontGeo = new THREE.PlaneGeometry(2, 2.8);
+            const frontMat = new THREE.MeshStandardMaterial({ map: texture });
+            const front = new THREE.Mesh(frontGeo, frontMat);
+            front.position.z = 0.1;
+            group.add(front);
+
+            group.position.set((Math.random() - 0.5) * 12, 2, (Math.random() - 0.5) * 8);
+            return group;
+        }
+
+        function calculateSemiCirclePositions(count) {
+            const positions = [];
+            const radius = 6.5;
+            const baseHeight = 1.5;
+            const startAngle = Math.PI / 4;
+            const endAngle = (Math.PI * 3) / 4;
+            const angleStep = (endAngle - startAngle) / (count - 1);
+
+            for (let i = 0; i < count; i++) {
+                const angle = startAngle + angleStep * i;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                const rotY = angle - Math.PI / 2;
+
+                positions.push({ x, y: baseHeight, z, rotY, scale: 0.8 });
+            }
+
+            return positions;
+        }
+
+        function summonCardWithImpact(card, targetPosition, index) {
+            const startX = (Math.random() - 0.5) * 8;
+            const startY = 6 + Math.random() * 5;
+            const startZ = 12 + Math.random() * 6;
+
+            card.position.set(startX, startY, startZ);
+            card.rotation.set(
+                Math.random() * Math.PI * 2,
+                Math.random() * Math.PI * 2,
+                Math.random() * Math.PI
+            );
+            card.scale.set(0.3, 0.3, 0.3);
+
+            const timeline = gsap.timeline();
+
+            timeline.to(card.position, {
+                x: targetPosition.x,
+                y: targetPosition.y,
+                z: targetPosition.z,
+                duration: 1,
+                ease: 'power2.out'
+            }, 0);
+
+            timeline.to(card.scale, {
+                x: targetPosition.scale,
+                y: targetPosition.scale,
+                z: targetPosition.scale,
+                duration: 1,
+                ease: 'back.out'
+            }, 0);
+
+            timeline.to(card.rotation, {
+                x: 0,
+                y: targetPosition.rotY,
+                z: 0,
+                duration: 1.2,
+                ease: 'power2.inOut'
+            }, 0);
+
+            timeline.call(() => {
+                triggerCameraShake(8 - index);
+            }, null, 1);
+        }
+
+        function triggerCameraShake(intensity) {
+            const originalPos = { ...camera.position };
+            const shakeAmount = 0.3 * (intensity / 5);
+
+            gsap.timeline()
+                .to(camera.position, {
+                    x: originalPos.x + (Math.random() - 0.5) * shakeAmount,
+                    y: originalPos.y + (Math.random() - 0.5) * shakeAmount,
+                    z: originalPos.z + (Math.random() - 0.5) * shakeAmount,
+                    duration: 0.08,
+                    repeatDelay: 0.08,
+                    repeat: Math.floor(intensity),
+                    ease: 'sine.inOut',
+                    onComplete: () => {
+                        camera.position.copy(originalPos);
+                    }
+                });
+        }
+
+        // ===== UI CONTROLS =====
+        function toggleSettingsPanel() {
+            if (currentState !== GAME_STATES.LOBBY) return;
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('visible');
+            gameState.isPanelOpen = panel.classList.contains('visible');
+        }
+
+        function updateSetting(key, value) {
+            if (key === 'discussionTime') {
+                gameState.gameSettings.discussionTime = parseInt(value);
+                document.getElementById('discussionValue').textContent = value;
+            } else if (key === 'votingTime') {
+                gameState.gameSettings.votingTime = parseInt(value);
+                document.getElementById('votingValue').textContent = value;
+            } else if (key === 'nightTime') {
+                gameState.gameSettings.nightTime = parseInt(value);
+                document.getElementById('nightValue').textContent = value;
+            } else if (key === 'soundEnabled') {
+                gameState.gameSettings.soundEnabled = value;
+            } else if (key === 'musicEnabled') {
+                gameState.gameSettings.musicEnabled = value;
+            }
+        }
+
+        function purchaseCard(price, name) {
+            if (gameState.coins >= price) {
+                gameState.coins -= price;
+                document.getElementById('coinCount').textContent = gameState.coins;
+                console.log(`✅ Purchased: ${name}`);
+            }
+        }
+
+        function startGameFromLobby() {
+            transitionToState(GAME_STATES.GAME_START);
+        }
+
+        function triggerSleepAnimation() {
+            const eyelids = document.getElementById('eyelids');
+            eyelids.classList.add('sleeping');
+            gameState.isSleeping = true;
+
+            setTimeout(() => {
+                eyelids.classList.remove('sleeping');
+                gameState.isSleeping = false;
+            }, 3000);
+        }
+
+        function startGameCountdown() {
+            const countdownOverlay = document.getElementById('countdownOverlay');
+            countdownOverlay.style.display = 'flex';
+
+            const counts = ['5', '4', '3', '2', '1', '🚀'];
+            let currentCount = 0;
+
+            const countdownInterval = setInterval(() => {
+                const countdownText = document.getElementById('countdownText');
+                countdownText.textContent = counts[currentCount];
+
+                gsap.fromTo(
+                    countdownText,
+                    { scale: 0.3, opacity: 0 },
+                    { scale: 1.3, opacity: 0, duration: 1, ease: 'back.out' }
+                );
+
+                currentCount++;
+                if (currentCount >= counts.length) {
+                    clearInterval(countdownInterval);
+                    setTimeout(() => {
+                        countdownOverlay.style.display = 'none';
+                        transitionToState(GAME_STATES.GAME_ACTIVE);
+                    }, 500);
+                }
+            }, 1000);
+        }
+
+        function goBack() {
+            if (stateHistory.length > 0) {
+                const previousState = stateHistory.pop();
+                currentState = GAME_STATES.HOME; // Reset to allow transition
+                transitionToState(previousState);
+            }
+        }
+
+        // ===== EVENT HANDLERS =====
+        function setupEvents() {
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('click', onDocumentClick);
+        }
+
+        function setupKeyboard() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 's') {
+                    if (currentState === GAME_STATES.LOBBY) {
+                        toggleSettingsPanel();
+                    }
+                }
+                if (e.key === '1') transitionToState(GAME_STATES.HOME);
+                if (e.key === '2') transitionToState(GAME_STATES.LOBBY);
+                if (e.key === '3') transitionToState(GAME_STATES.STORE);
+            });
+        }
+
+        function onDocumentClick(event) {
+            // Check for settings button click (anywhere on top right area in LOBBY)
+            if (currentState === GAME_STATES.LOBBY && event.clientX > window.innerWidth - 100) {
+                toggleSettingsPanel();
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

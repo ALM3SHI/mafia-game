@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAFIA 3SHI - IMMERSIVE ARCADE 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            font-family: 'Tajawal', Arial, sans-serif;
+            background: #0a0e27;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* ===== HOLOGRAPHIC UI OVERLAY ===== */
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .top-hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+            opacity: 1;
+            transition: opacity 0.4s ease;
+        }
+        
+        .top-hud.sleeping {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .game-title {
+            font-size: 36px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff006e, #00f5ff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 30px rgba(255, 1, 110, 0.6);
+        }
+        
+        .leader-badge {
+            background: rgba(255, 215, 0, 0.15);
+            border: 2px solid #ffd700;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: #ffd700;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            backdrop-filter: blur(8px);
+        }
+        
+        .controls-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(0, 245, 255, 0.6);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: hintPulse 2s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes hintPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.9; }
+        }
+        
+        /* ===== HOLOGRAPHIC SETTINGS PANEL ===== */
+        .holographic-panel {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%) perspective(1200px) rotateY(-15deg);
+            width: 350px;
+            background: rgba(0, 20, 40, 0.35);
+            border: 2px solid #00f5ff;
+            border-radius: 20px;
+            padding: 30px;
+            color: #00f5ff;
+            backdrop-filter: blur(15px);
+            box-shadow: 
+                0 0 30px rgba(0, 245, 255, 0.3),
+                inset 0 0 30px rgba(0, 245, 255, 0.1),
+                0 0 60px rgba(255, 1, 110, 0.1);
+            pointer-events: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            transform-style: preserve-3d;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        .holographic-panel.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) perspective(1200px) rotateY(-5deg);
+        }
+        
+        .holographic-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .holographic-panel::-webkit-scrollbar-track {
+            background: rgba(0, 245, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .holographic-panel::-webkit-scrollbar-thumb {
+            background: rgba(0, 245, 255, 0.5);
+            border-radius: 10px;
+        }
+        
+        .panel-title {
+            font-size: 20px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.6);
+            border-bottom: 2px solid rgba(0, 245, 255, 0.4);
+            padding-bottom: 15px;
+        }
+        
+        .setting-group {
+            margin-bottom: 20px;
+        }
+        
+        .setting-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+        
+        .neon-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(0, 245, 255, 0.2);
+            border: 1px solid #00f5ff;
+            outline: none;
+            -webkit-appearance: none;
+            box-shadow: inset 0 0 10px rgba(0, 245, 255, 0.2);
+        }
+        
+        .neon-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00f5ff, #ff006e);
+            cursor: pointer;
+            box-shadow: 0 0 15px #00f5ff;
+            border: 2px solid #00f5ff;
+        }
+        
+        .neon-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00f5ff, #ff006e);
+            cursor: pointer;
+            box-shadow: 0 0 15px #00f5ff;
+            border: 2px solid #00f5ff;
+        }
+        
+        .toggle-switch {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .toggle-checkbox {
+            width: 50px;
+            height: 28px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .toggle-checkbox input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 245, 255, 0.2);
+            border: 1px solid #00f5ff;
+            transition: .4s;
+            border-radius: 34px;
+            box-shadow: inset 0 0 5px rgba(0, 245, 255, 0.2);
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 2px;
+            background-color: #00f5ff;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00f5ff;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: rgba(0, 245, 255, 0.4);
+            box-shadow: inset 0 0 15px rgba(0, 245, 255, 0.3);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+        
+        .role-toggles {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .role-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(0, 245, 255, 0.15);
+            border: 2px solid #00f5ff;
+            color: #00f5ff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .role-btn:hover {
+            background: rgba(0, 245, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+        }
+        
+        .role-btn.disabled {
+            background: rgba(100, 100, 100, 0.2);
+            border-color: #666;
+            color: #888;
+        }
+        
+        .action-buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .holographic-btn {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.2), rgba(0, 245, 255, 0.1));
+            border: 2px solid #00f5ff;
+            color: #00f5ff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 11px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        
+        .holographic-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.4), rgba(0, 245, 255, 0.2));
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .holographic-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .close-panel-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 30px;
+            height: 30px;
+            background: none;
+            border: 2px solid #ff006e;
+            color: #ff006e;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .close-panel-btn:hover {
+            box-shadow: 0 0 15px #ff006e;
+            transform: rotate(90deg);
+        }
+        
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            pointer-events: none;
+        }
+        
+        .countdown-text {
+            font-size: 120px;
+            font-weight: 900;
+            color: #ff006e;
+            text-shadow: 0 0 50px rgba(255, 1, 110, 0.8);
+            animation: countdownPulse 1s ease-in-out;
+        }
+        
+        @keyframes countdownPulse {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div id="ui">
+        <div class="top-hud">
+            <div class="game-title">🎭 IMMERSIVE ARCADE 3D 🎭</div>
+            <div class="leader-badge" id="leaderBadge">👑 ROOM LEADER</div>
+        </div>
+        <div class="controls-hint">⚙️ SETTINGS | 🎮 PRESS "S" TO START</div>
+    </div>
+    
+    <!-- HOLOGRAPHIC SETTINGS PANEL -->
+    <div class="holographic-panel" id="settingsPanel">
+        <button class="close-panel-btn" onclick="toggleSettingsPanel()">×</button>
+        <div class="panel-title">⚙️ Game Settings</div>
+        
+        <div class="setting-group">
+            <div class="setting-label">Discussion Time: <span id="discussionValue">60</span>s</div>
+            <input type="range" min="30" max="120" value="60" class="neon-slider" id="discussionSlider" onchange="updateSetting('discussionTime', this.value)">
+        </div>
+        
+        <div class="setting-group">
+            <div class="setting-label">Voting Time: <span id="votingValue">30</span>s</div>
+            <input type="range" min="15" max="60" value="30" class="neon-slider" id="votingSlider" onchange="updateSetting('votingTime', this.value)">
+        </div>
+        
+        <div class="setting-group">
+            <div class="setting-label">Night Time: <span id="nightValue">20</span>s</div>
+            <input type="range" min="10" max="45" value="20" class="neon-slider" id="nightSlider" onchange="updateSetting('nightTime', this.value)">
+        </div>
+        
+        <div class="setting-group">
+            <div class="setting-label">Sound Settings</div>
+            <label class="toggle-checkbox">
+                <input type="checkbox" checked onchange="updateSetting('soundEnabled', this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+            <span style="margin-left: 10px;">🔊 Sound Effects</span>
+        </div>
+        
+        <div class="setting-group">
+            <div class="setting-label">Music</div>
+            <label class="toggle-checkbox">
+                <input type="checkbox" checked onchange="updateSetting('musicEnabled', this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+            <span style="margin-left: 10px;">🎵 Background Music</span>
+        </div>
+        
+        <div class="setting-group">
+            <div class="setting-label">🎭 Enabled Roles</div>
+            <div class="role-toggles">
+                <button class="role-btn" onclick="toggleRole('mafia')">🔫 Mafia</button>
+                <button class="role-btn" onclick="toggleRole('doctor')">⚕️ Doctor</button>
+                <button class="role-btn" onclick="toggleRole('sheriff')">🔖 Sheriff</button>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="holographic-btn" onclick="toggleSettingsPanel()">Close</button>
+            <button class="holographic-btn" onclick="resetSettings()">Reset</button>
+        </div>
+    </div>
+    
+    <div class="countdown-overlay" id="countdownOverlay">
+        <div class="countdown-text" id="countdownText">3</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // ===== GAME STATE =====
+        const gameState = {
+            isLeader: true,
+            isPanelOpen: false,
+            gameSettings: {
+                discussionTime: 60,
+                votingTime: 30,
+                nightTime: 20,
+                soundEnabled: true,
+                musicEnabled: true,
+                rolesEnabled: {
+                    mafia: true,
+                    doctor: true,
+                    sheriff: true
+                }
+            },
+            players: [],
+            gameStarting: false
+        };
+
+        const INITIAL_PLAYERS = [
+            { id: 0, name: 'Player 1', emoji: '🦁', isLeader: true, color: 0xffd700 },
+            { id: 1, name: 'Player 2', emoji: '🐉', isLeader: false, color: 0xff006e },
+            { id: 2, name: 'Player 3', emoji: '🔥', isLeader: false, color: 0xff6347 },
+            { id: 3, name: 'Player 4', emoji: '🐺', isLeader: false, color: 0x4169e1 },
+            { id: 4, name: 'Player 5', emoji: '🐯', isLeader: false, color: 0xff8c00 }
+        ];
+
+        let scene, camera, renderer;
+        let playerCards = [];
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        // ===== INITIALIZATION =====
+        function init() {
+            setupScene();
+            setupLights();
+            setupPlayers();
+            setupEvents();
+            animate();
+
+            console.log('🎭 IMMERSIVE ARCADE 3D');
+            console.log('⚙️ Click top right area to open holographic settings');
+            console.log('🎮 Press "S" to start the game');
+        }
+
+        function setupScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e27);
+            scene.fog = new THREE.Fog(0x0a0e27, 150, 400);
+
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 3, 12);
+            camera.lookAt(0, 1.5, 0);
+
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('canvas'),
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+        }
+
+        function setupLights() {
+            const ambientLight = new THREE.AmbientLight(0x1a2a5c, 0.6);
+            scene.add(ambientLight);
+
+            const spotlight = new THREE.SpotLight(0x00f5ff, 1.8, 150, Math.PI / 2.5, 0.4, 2);
+            spotlight.position.set(0, 20, 10);
+            spotlight.target.position.set(0, 1.5, 0);
+            spotlight.castShadow = true;
+            spotlight.shadow.mapSize.width = 2048;
+            spotlight.shadow.mapSize.height = 2048;
+            scene.add(spotlight);
+            scene.add(spotlight.target);
+
+            const neonLight1 = new THREE.PointLight(0xff006e, 1.3, 90);
+            neonLight1.position.set(15, 5, 5);
+            scene.add(neonLight1);
+
+            const neonLight2 = new THREE.PointLight(0x00f5ff, 1.3, 90);
+            neonLight2.position.set(-15, 5, 5);
+            scene.add(neonLight2);
+        }
+
+        function setupPlayers() {
+            const positions = calculateSemiCirclePositions(INITIAL_PLAYERS.length);
+
+            INITIAL_PLAYERS.forEach((playerData, index) => {
+                const playerCard = createPremiumCard(playerData);
+                scene.add(playerCard);
+                playerCards.push(playerCard);
+                gameState.players.push({
+                    ...playerData,
+                    mesh: playerCard
+                });
+
+                // Staggered summoning animation
+                setTimeout(() => {
+                    summonCardWithImpact(playerCard, positions[index], index);
+                }, index * 150);
+            });
+        }
+
+        function calculateSemiCirclePositions(count) {
+            const positions = [];
+            const radius = 6.5;
+            const baseHeight = 1.5;
+            const startAngle = Math.PI / 4;
+            const endAngle = (Math.PI * 3) / 4;
+            const angleStep = (endAngle - startAngle) / (count - 1);
+
+            for (let i = 0; i < count; i++) {
+                const angle = startAngle + angleStep * i;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                const scaleFactor = 0.8 + 0.2 * Math.cos((angle - Math.PI / 2) * 2);
+                const rotY = angle - Math.PI / 2;
+
+                positions.push({ x, y: baseHeight, z, rotY, scale: scaleFactor });
+            }
+
+            return positions;
+        }
+
+        // ===== PREMIUM 3D CARD CREATION =====
+        function createPremiumCard(playerData) {
+            const cardGroup = new THREE.Group();
+            cardGroup.userData = { playerData };
+
+            // Main card body with HIGH METALNESS
+            const cardGeometry = new THREE.BoxGeometry(2.8, 4, 0.2);
+            const cardMaterial = new THREE.MeshStandardMaterial({
+                color: playerData.color,
+                metalness: 0.85,
+                roughness: 0.15,
+                emissive: playerData.color,
+                emissiveIntensity: 0.4,
+                envMapIntensity: 1.0
+            });
+            const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
+            cardMesh.castShadow = true;
+            cardMesh.receiveShadow = true;
+            cardGroup.add(cardMesh);
+
+            // NEON BORDER - Glowing Frame
+            const edges = new THREE.EdgesGeometry(cardGeometry);
+            const neonBorderColor = playerData.isLeader ? 0xffd700 : playerData.color;
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: neonBorderColor,
+                linewidth: 4,
+                emissive: neonBorderColor,
+                fog: false
+            });
+            const border = new THREE.LineSegments(edges, lineMaterial);
+            border.position.z = 0.12;
+            cardGroup.add(border);
+
+            // Card artwork canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = 560;
+            canvas.height = 800;
+            const ctx = canvas.getContext('2d');
+
+            // Gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 560, 800);
+            gradient.addColorStop(0, '#1a1a3e');
+            gradient.addColorStop(0.5, '#2a3a6e');
+            gradient.addColorStop(1, '#1a1a3e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 560, 800);
+
+            // Holographic shimmer effect
+            for (let i = 0; i < 40; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.08 - i * 0.002})`;
+                ctx.fillRect(i * 14, 0, 3, 800);
+            }
+
+            // Card frame border
+            ctx.strokeStyle = playerData.isLeader ? '#ffd700' : playerData.color;
+            ctx.lineWidth = 8;
+            ctx.strokeRect(20, 20, 520, 760);
+
+            // Rarity label
+            ctx.font = 'bold 36px Tajawal, Arial';
+            ctx.fillStyle = playerData.isLeader ? '#ffd700' : '#00f5ff';
+            ctx.textAlign = 'center';
+            ctx.fillText(playerData.isLeader ? '👑 LEADER' : '🎭 PLAYER', 280, 70);
+
+            // Large emoji
+            ctx.font = 'bold 280px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(playerData.emoji, 280, 300);
+
+            // Character name
+            ctx.font = 'bold 40px Tajawal, Arial';
+            ctx.fillStyle = '#ffd700';
+            ctx.textAlign = 'center';
+            ctx.fillText(playerData.name, 280, 600);
+
+            // Corner ornaments
+            const cornerSize = 30;
+            const corners = [
+                { x: 30, y: 30 },
+                { x: 530, y: 30 },
+                { x: 30, y: 770 },
+                { x: 530, y: 770 }
+            ];
+
+            ctx.fillStyle = playerData.isLeader ? '#ffd700' : playerData.color;
+            corners.forEach(c => {
+                ctx.fillRect(c.x - cornerSize / 2, c.y - cornerSize / 2, cornerSize, cornerSize);
+            });
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.LinearFilter;
+            texture.minFilter = THREE.LinearFilter;
+
+            const frontGeometry = new THREE.PlaneGeometry(2.75, 3.95);
+            const frontMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.3,
+                metalness: 0.6,
+                emissive: 0x111111,
+                emissiveIntensity: 0.2
+            });
+
+            const frontMesh = new THREE.Mesh(frontGeometry, frontMaterial);
+            frontMesh.position.z = 0.12;
+            frontMesh.castShadow = true;
+            cardGroup.add(frontMesh);
+
+            // INTENSE GLOW LIGHT
+            const cardLight = new THREE.PointLight(neonBorderColor, 1.2, 20);
+            cardLight.position.z = 2;
+            cardGroup.add(cardLight);
+
+            // Leader crown effect
+            if (playerData.isLeader) {
+                const crownGeometry = new THREE.TorusGeometry(1.8, 0.2, 16, 100);
+                const crownMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffd700,
+                    emissive: 0xffd700,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                const crownMesh = new THREE.Mesh(crownGeometry, crownMaterial);
+                crownMesh.position.y = 2.4;
+                crownMesh.position.z = 1.2;
+                cardGroup.add(crownMesh);
+
+                // Animated crown glow
+                gsap.to(crownMaterial, {
+                    opacity: 0.35,
+                    duration: 1.5,
+                    yoyo: true,
+                    repeat: -1
+                });
+            }
+
+            return cardGroup;
+        }
+
+        // ===== FAST FLY-IN SUMMONING WITH IMPACT =====
+        function summonCardWithImpact(card, targetPosition, index) {
+            // Start position: Behind camera at angle
+            const startX = (Math.random() - 0.5) * 8;
+            const startY = 6 + Math.random() * 5;
+            const startZ = 12 + Math.random() * 6;
+
+            card.position.set(startX, startY, startZ);
+            card.rotation.set(
+                Math.random() * Math.PI * 2,
+                Math.random() * Math.PI * 2,
+                Math.random() * Math.PI
+            );
+            card.scale.set(0.3, 0.3, 0.3);
+
+            // FAST FLY-IN (1 second)
+            const timeline = gsap.timeline();
+
+            timeline.to(card.position, {
+                x: targetPosition.x,
+                y: targetPosition.y,
+                z: targetPosition.z,
+                duration: 1,
+                ease: 'power2.out'
+            }, 0);
+
+            timeline.to(card.scale, {
+                x: targetPosition.scale,
+                y: targetPosition.scale,
+                z: targetPosition.scale,
+                duration: 1,
+                ease: 'back.out'
+            }, 0);
+
+            timeline.to(card.rotation, {
+                x: 0,
+                y: targetPosition.rotY,
+                z: 0,
+                duration: 1.2,
+                ease: 'power2.inOut'
+            }, 0);
+
+            // CAMERA SHAKE ON IMPACT
+            timeline.call(() => {
+                triggerCameraShakeWithForce(8 - index);
+            }, null, 1);
+        }
+
+        function triggerCameraShakeWithForce(intensity) {
+            const originalPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+            const shakeAmount = 0.3 * (intensity / 5);
+
+            gsap.timeline()
+                .to(camera.position, {
+                    x: originalPos.x + (Math.random() - 0.5) * shakeAmount,
+                    y: originalPos.y + (Math.random() - 0.5) * shakeAmount,
+                    z: originalPos.z + (Math.random() - 0.5) * shakeAmount,
+                    duration: 0.08,
+                    repeatDelay: 0.08,
+                    repeat: Math.floor(intensity),
+                    ease: 'sine.inOut',
+                    onComplete: () => {
+                        camera.position.copy(originalPos);
+                    }
+                });
+        }
+
+        // ===== HOLOGRAPHIC PANEL CONTROLS =====
+        function toggleSettingsPanel() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('visible');
+            gameState.isPanelOpen = panel.classList.contains('visible');
+        }
+
+        function updateSetting(key, value) {
+            if (key === 'discussionTime') {
+                gameState.gameSettings.discussionTime = parseInt(value);
+                document.getElementById('discussionValue').textContent = value;
+            } else if (key === 'votingTime') {
+                gameState.gameSettings.votingTime = parseInt(value);
+                document.getElementById('votingValue').textContent = value;
+            } else if (key === 'nightTime') {
+                gameState.gameSettings.nightTime = parseInt(value);
+                document.getElementById('nightValue').textContent = value;
+            } else if (key === 'soundEnabled') {
+                gameState.gameSettings.soundEnabled = value;
+            } else if (key === 'musicEnabled') {
+                gameState.gameSettings.musicEnabled = value;
+            }
+        }
+
+        function toggleRole(role) {
+            gameState.gameSettings.rolesEnabled[role] = !gameState.gameSettings.rolesEnabled[role];
+            const button = event.target;
+            button.classList.toggle('disabled');
+        }
+
+        function resetSettings() {
+            gameState.gameSettings = {
+                discussionTime: 60,
+                votingTime: 30,
+                nightTime: 20,
+                soundEnabled: true,
+                musicEnabled: true,
+                rolesEnabled: {
+                    mafia: true,
+                    doctor: true,
+                    sheriff: true
+                }
+            };
+            document.getElementById('discussionValue').textContent = '60';
+            document.getElementById('votingValue').textContent = '30';
+            document.getElementById('nightValue').textContent = '20';
+            document.getElementById('discussionSlider').value = 60;
+            document.getElementById('votingSlider').value = 30;
+            document.getElementById('nightSlider').value = 20;
+        }
+
+        // ===== GAME EVENTS =====
+        function setupEvents() {
+            document.addEventListener('keydown', onKeyDown);
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onKeyDown(event) {
+            if (event.key.toLowerCase() === 's') {
+                startGame();
+            }
+        }
+
+        function startGame() {
+            if (gameState.gameStarting) return;
+            gameState.gameStarting = true;
+
+            const countdownOverlay = document.getElementById('countdownOverlay');
+            countdownOverlay.style.display = 'flex';
+
+            const counts = ['5', '4', '3', '2', '1', '🚀'];
+            let currentCount = 0;
+
+            const countdownInterval = setInterval(() => {
+                const countdownText = document.getElementById('countdownText');
+                countdownText.textContent = counts[currentCount];
+
+                gsap.fromTo(
+                    countdownText,
+                    { scale: 0.3, opacity: 0 },
+                    { scale: 1.3, opacity: 0, duration: 1, ease: 'back.out' }
+                );
+
+                currentCount++;
+                if (currentCount >= counts.length) {
+                    clearInterval(countdownInterval);
+                    setTimeout(() => {
+                        countdownOverlay.style.display = 'none';
+                        console.log('✅ GAME STARTED!');
+                        console.log('Settings:', gameState.gameSettings);
+                        gameState.gameStarting = false;
+                    }, 500);
+                }
+            }, 1000);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

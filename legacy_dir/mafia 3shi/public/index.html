@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>المافيا - لعبة الذكاء والخداع</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="arcade.css">
+    <link rel="stylesheet" href="cinematic.css">
+</head>
+<body>
+    <div id="app"></div>
+
+    <!-- Speaker Panel -->
+    <div id="speaker-panel" class="speaker-panel hidden">
+        <div class="speaker-content">
+            <div class="speaker-icon" id="speaker-icon-container"></div>
+            <div class="speaker-info">
+                <div class="speaker-label">يتحدث الآن</div>
+                <div class="speaker-name">-</div>
+            </div>
+            <div class="speaker-timer">
+                <div class="timer-text">-</div>
+                <div class="timer-bar">
+                    <div class="timer-fill"></div>
+                </div>
+            </div>
+        </div>
+        <div class="speaker-quote">-</div>
+    </div>
+
+    <!-- Discussion Feed -->
+    <div id="discussion-feed" class="discussion-feed hidden">
+        <div class="discussion-header">
+            <div class="feed-title" id="feed-title-container"></div>
+            <button class="close-feed-btn" onclick="discussionFeed.toggle()">✕</button>
+        </div>
+        <div class="discussion-messages"></div>
+    </div>
+
+    <!-- Live Vote Display -->
+    <div id="live-vote-display" class="live-vote-display hidden">
+        <div class="vote-header">
+            <div class="vote-title" id="vote-title-container"></div>
+        </div>
+        <div class="vote-bars"></div>
+    </div>
+
+    <!-- Result Celebration Screen -->
+    <div id="result-celebration" class="result-celebration hidden">
+        <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+        <div class="celebration-content">
+            <div class="celebration-icon">💀</div>
+            <div class="celebration-title">القضاء على</div>
+            <div class="celebration-name">-</div>
+            <div class="celebration-role">
+                <span class="role-icon">-</span>
+                <span class="role-name">-</span>
+            </div>
+            <button class="btn btn-primary btn-large" onclick="closeCelebration()">متابعة</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="icons.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+faster-whisper
+llama-cpp-python
+edge-tts
+sounddevice
+numpy
+scipy
+pygame
+torch
