@@ -327,9 +327,11 @@ export default function GamePage() {
                   backImage={CARD_COVERS[index % CARD_COVERS.length]}
                   onClick={() => handleCardClick(player)}
                   backContent={
-                    <div className="flex flex-col items-center justify-center h-full w-full p-4 text-center bg-black/30">
-                      <div className="text-4xl mb-3">{player.avatar}</div>
-                      <h3 className="font-changa text-lg font-black text-white">{player.name}</h3>
+                    <div className="flex flex-col items-center justify-center h-full w-full p-4 text-center bg-black/40">
+                      <div className="flex flex-col items-center bg-black/75 border border-[#cfb06f]/30 rounded-xl px-4 py-2 backdrop-blur-sm">
+                        <span className="text-3xl">{player.avatar}</span>
+                        <h3 className="font-changa text-lg font-black text-white">{player.name}</h3>
+                      </div>
                       {teammate && <span className="mt-2 bg-red-600 text-white text-[11px] font-black px-3 py-1 rounded-full">شريكك 🔫</span>}
                       {valid && <Crosshair className="w-9 h-9 mt-3 text-red-500 animate-pulse" />}
                     </div>

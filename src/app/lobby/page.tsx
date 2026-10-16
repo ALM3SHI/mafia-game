@@ -144,8 +144,10 @@ export default function LobbyPage() {
                   onClick={() => player.id === myId && toggleReady(player.id)}
                   backContent={
                     <div className="flex flex-col items-center justify-center h-full w-full p-6 text-center bg-black/40">
-                      <div className="mb-4 text-5xl">{player.avatar}</div>
-                      <h3 className="font-changa text-xl font-black text-white">{player.name}</h3>
+                      <div className="flex flex-col items-center bg-black/75 border border-[#cfb06f]/30 rounded-xl px-4 py-2">
+                        <span className="text-4xl">{player.avatar}</span>
+                        <h3 className="font-changa text-xl font-black text-white">{player.name}</h3>
+                      </div>
                       <div className="mt-4 px-4 py-1 bg-white/20 border border-white/40 rounded-full text-[11px] text-white font-black">
                         {player.id === myId ? 'اضغط للجاهزية' : 'غير جاهز'}
                       </div>
