@@ -18,21 +18,23 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import binascii
+import hmac
 import json
 import os
 import re
 import sys
 import tempfile
 import time
+import urllib.error
 import urllib.request
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator, Optional
 
-from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from faster_whisper import WhisperModel
 from gradio_client import Client as GradioClient, handle_file
-import uvicorn
 
 from config import settings
 from tts_cache import TTSCache
@@ -323,35 +325,58 @@ async def stream_ollama(prompt: str) -> AsyncIterator[str]:
         response.close()
 
 
+def _names(items, limit: int = 12) -> str:
+    out = [str(x)[:30] for x in (items or [])][:limit]
+    return "، ".join(out) if out else "لا أحد"
+
+
 def build_system_prompt(game_context: dict) -> str:
-    phase = game_context.get("phase", "مجهولة")
-    day = game_context.get("day", 1)
-    alive_players = game_context.get("alivePlayers", [])
-    bots_info = ", ".join(
-        f"[{p.get('name')} - الدور: {p.get('role', 'مواطن')}]"
-        for p in alive_players if p.get("isBot")
+    """
+    Prompt for ONE bot. The bot only learns what its role would know in a
+    real game: its own role, its mafia teammates (if mafia), who is alive and
+    who is dead. It is never told the human's role or other bots' roles, so
+    it cannot leak them.
+    """
+    ctx = game_context if isinstance(game_context, dict) else {}
+    speaker = ctx.get("speaker") if isinstance(ctx.get("speaker"), dict) else {}
+    name = str(speaker.get("name") or "بوت")[:30]
+    role = str(speaker.get("role") or "مواطن")[:20]
+    teammates = speaker.get("mafiaTeammates") or []
+    human = str(ctx.get("humanName") or "اللاعب")[:30]
+    phase = str(ctx.get("phase") or "النهار")[:20]
+    round_no = ctx.get("round", 1)
+    alive = _names(ctx.get("alivePlayers"))
+    dead = _names(
+        f"{d.get('name')} ({d.get('role')})" if isinstance(d, dict) and d.get("role") else (d.get("name") if isinstance(d, dict) else d)
+        for d in (ctx.get("deadPlayers") or [])
     )
-    human_info = next(
-        (f"[{p.get('name')} - الدور: {p.get('role')}]"
-         for p in alive_players if not p.get("isBot")),
-        "اللاعب البشري",
-    )
-    return f"""أنت لاعب في لعبة مافيا تلعب دور أحد البوتات.
-معلومات اللعبة الحالية:
-- المرحلة: {phase} (اليوم {day})
-- البوتات المتبقية (أنت تلعب نيابة عنهم): {bots_info}
-- اللاعب البشري الذي يكلمك الآن: {human_info}
 
-قواعد اللعب والرد (التزم بها حرفياً):
-0. اكتب بالعربية فقط. ممنوع منعاً باتاً أي حرف إنجليزي أو أي لغة أخرى.
-1. افهم المعنى العام لكلام اللاعب البشري وتجاهل الأخطاء الإملائية الناتجة عن تحويل الصوت إلى نص.
-2. تحدث بلهجة سعودية بيضاء طبيعية جداً، كأنك شاب يلعب أونلاين.
-3. الرد يجب أن يكون جملة واحدة فقط، قصيرة ومستفزة.
-4. إياك أن تكتب ملاحظات بين أقواس. اكتب الرد المباشر فقط.
+    if role == "مافيا":
+        secret = (
+            f"أنت سراً من المافيا وشركاؤك: {_names(teammates)}. "
+            "لا تعترف أبداً أنك مافيا، ودافع عن نفسك وعن شركائك، ووجّه الشك لغيركم."
+        )
+    else:
+        secret = f"دورك الحقيقي: {role}. أنت مع المدينة وتحاول تكشف المافيا. لا تكشف دورك إلا إذا كان في مصلحتك."
 
-أمثلة لأسلوب الرد المطلوب:
-- "يا حبيبي طير بس، أنا مواطن غلبان والمافيا معروف مين."
-- "والله ما فضح نفسه غيرك، العب بعيد يا كابتن."
+    return f"""أنت "{name}"، لاعب في لعبة مافيا صوتية.
+{secret}
+
+حالة اللعبة:
+- المرحلة: {phase} (الجولة {round_no})
+- الأحياء: {alive}
+- الموتى: {dead}
+- اللاعب الذي يكلمك الآن: {human}
+
+قواعد الرد (التزم بها حرفياً):
+0. اكتب بالعربية فقط، بدون أي حروف إنجليزية.
+1. افهم المعنى العام وتجاهل أخطاء تحويل الصوت إلى نص.
+2. تكلم بلهجة سعودية بيضاء طبيعية كأنك شاب يلعب أونلاين.
+3. رد بجملة أو جملتين قصيرتين فقط.
+4. لا تكتب ملاحظات بين أقواس ولا تذكر أنك ذكاء اصطناعي.
+
+أمثلة للأسلوب:
+- "يا حبيبي طير بس، أنا مواطن والمافيا معروف مين."
 - "أنت المافيا وجاي ترمي بلاك عليّ؟ مكشوفة حركاتك."
 - "كلامك مردود عليك، تصويتي بيكون ضدك اليوم."
 """
@@ -386,10 +411,7 @@ def transcribe_blocking(tmp_path: str) -> str:
         vad_parameters=dict(min_silence_duration_ms=500),
         temperature=0.0,
         condition_on_previous_text=False,
-        initial_prompt=(
-            "السلام عليكم أنا عمر نلعب مافيا مواطن تصويت تستهبل علي مجنون "
-            "متأكد حيوان يا قلبي سيتيزن."
-        ),
+        initial_prompt="نلعب مافيا: مواطن، طبيب، محقق، تصويت، طرد، أتهمك، أنا بريء، مين المافيا؟",
     )
     return "".join(s.text for s in segs).strip()
 
@@ -397,19 +419,32 @@ def transcribe_blocking(tmp_path: str) -> str:
 # ---------------------------------------------------------------------------
 # Auth — optional Bearer token check, no-op if MAFIA_API_KEY is empty
 # ---------------------------------------------------------------------------
-def check_api_key(authorization: Optional[str]) -> None:
-    if not settings.api_key:
-        return
-    expected = f"Bearer {settings.api_key}"
-    if authorization != expected:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="bad token")
-
-
 def check_ws_api_key(websocket: WebSocket) -> bool:
+    """
+    Accepts either `Authorization: Bearer <key>` (Unity / native clients) or
+    `?token=<key>` (browsers cannot set headers on a WebSocket handshake).
+    """
     if not settings.api_key:
         return True
+    expected = settings.api_key
     auth = websocket.headers.get("authorization", "")
-    return auth == f"Bearer {settings.api_key}"
+    supplied = auth[7:] if auth.lower().startswith("bearer ") else websocket.query_params.get("token", "")
+    return hmac.compare_digest(supplied.encode(), expected.encode())
+
+
+def resolve_ref_audio(ref: Optional[str]) -> Optional[str]:
+    """
+    Resolve a client-supplied voice reference to a file INSIDE the data
+    directory. Absolute paths and `..` escapes are rejected — previously a
+    client could make the server upload any file on disk to the TTS studio.
+    """
+    if not ref or not isinstance(ref, str):
+        return None
+    base = settings.data_path.resolve()
+    candidate = (base / ref).resolve()
+    if base != candidate and base not in candidate.parents:
+        return None
+    return str(candidate) if candidate.is_file() else None
 
 
 # ---------------------------------------------------------------------------
@@ -470,7 +505,7 @@ async def lifespan(app: FastAPI):
     # Ollama health check
     try:
         ollama_root = settings.ollama_url.rsplit("/api/", 1)[0] + "/"
-        with urllib.request.urlopen(urllib.request.Request(ollama_root, method="GET")) as r:
+        with urllib.request.urlopen(urllib.request.Request(ollama_root, method="GET"), timeout=3) as r:
             if r.status == 200:
                 print(f">>> [SUCCESS] Ollama reachable @ {ollama_root}")
     except Exception:
@@ -521,6 +556,124 @@ async def health():
 # ---------------------------------------------------------------------------
 # WebSocket: /ws/audio — main game pipeline
 # ---------------------------------------------------------------------------
+MAX_AUDIO_B64_CHARS = 12 * 1024 * 1024  # ~9 MB of audio — far more than a push-to-talk clip
+_RE_SAFE_ID = re.compile(r"[^A-Za-z0-9_\-]")
+
+
+def _safe_voice_id(raw: object, default: str) -> str:
+    """Speaker ids become cache keys; keep them short and boring."""
+    text = _RE_SAFE_ID.sub("", str(raw or ""))[:64]
+    return text or default
+
+
+async def _receive_message(websocket: WebSocket) -> Optional[dict]:
+    """Return the next JSON object, or None for malformed frames (never raises on bad JSON)."""
+    raw = await websocket.receive_text()
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        await websocket.send_json({"status": "error", "message": "رسالة غير صالحة"})
+        return None
+    if not isinstance(data, dict):
+        await websocket.send_json({"status": "error", "message": "رسالة غير صالحة"})
+        return None
+    return data
+
+
+async def _handle_audio_turn(websocket: WebSocket, data: dict) -> None:
+    t_start = time.perf_counter()
+    base64_audio = data.get("audio_data") or ""
+    game_context = data.get("game_context") or {}
+    speaker_id = _safe_voice_id(data.get("speaker_id"), "default_bot")
+
+    if not whisper_model:
+        await websocket.send_json({"status": "error", "message": "خدمة تحويل الصوت غير جاهزة"})
+        return
+    if not isinstance(base64_audio, str) or not base64_audio or len(base64_audio) > MAX_AUDIO_B64_CHARS:
+        await websocket.send_json({"status": "error", "message": "مقطع صوتي فارغ أو كبير جداً"})
+        return
+    try:
+        audio_bytes = base64.b64decode(base64_audio, validate=True)
+    except (binascii.Error, ValueError):
+        await websocket.send_json({"status": "error", "message": "ترميز الصوت غير صالح"})
+        return
+
+    # 1. STT (Whisper needs a file path).
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+        tmp.write(audio_bytes)
+        tmp_path = tmp.name
+    t_stt0 = time.perf_counter()
+    try:
+        user_text = await asyncio.to_thread(transcribe_blocking, tmp_path)
+    finally:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+    t_stt1 = time.perf_counter()
+
+    if not user_text:
+        await websocket.send_json({"status": "error", "message": "لم أسمعك جيداً"})
+        return
+    print(f"[STT {t_stt1 - t_stt0:.2f}s] {user_text}")
+    await websocket.send_json({"status": "transcript", "text": user_text})
+
+    # 2. LLM (streaming) → 3. TTS per sentence.
+    ref_path = resolve_ref_audio(data.get("ref_audio")) or (
+        str(settings.tts_default_ref_audio_path)
+        if settings.tts_default_ref_audio_path and settings.tts_default_ref_audio_path.exists()
+        else None
+    )
+    system_prompt = build_system_prompt(game_context)
+    full_prompt = f"System: {system_prompt}\nUser: {user_text}\nAssistant:"
+
+    t_llm0 = time.perf_counter()
+    buffer = ""
+    full_reply = ""
+    sentence_index = 0
+    tts_total_gen = 0.0
+
+    async def speak(sentence: str) -> None:
+        nonlocal sentence_index, tts_total_gen
+        clean = clean_text_for_tts(sentence)
+        if not clean:
+            return
+        audio, tts_t = await synth_tts(clean, ref_path, voice_id=speaker_id)
+        tts_total_gen += tts_t["gen_s"]
+        await _send_audio_chunk(websocket, sentence_index, clean, audio, tts_t)
+        sentence_index += 1
+
+    try:
+        async for chunk in stream_ollama(full_prompt):
+            buffer += chunk
+            full_reply += chunk
+            sentences = split_into_sentences(buffer)
+            if len(sentences) >= 2:
+                *complete, buffer = sentences  # last item may be incomplete
+                for sentence in complete:
+                    await speak(sentence)
+    except RuntimeError as e:
+        await websocket.send_json({"status": "error", "message": str(e)})
+        return
+    t_llm1 = time.perf_counter()
+
+    await speak(buffer)
+
+    t_total = time.perf_counter() - t_start
+    await websocket.send_json({
+        "status": "done",
+        "full_text": clean_text_for_tts(full_reply),
+        "sentence_count": sentence_index,
+        "timings": {
+            "stt_s": round(t_stt1 - t_stt0, 3),
+            "llm_s": round(t_llm1 - t_llm0, 3),
+            "tts_total_gen_s": round(tts_total_gen, 3),
+            "total_s": round(t_total, 3),
+        },
+    })
+    print(f"[DONE {t_total:.2f}s] {sentence_index} sentence(s).")
+
+
 @app.websocket("/ws/audio")
 async def audio_endpoint(websocket: WebSocket):
     if not check_ws_api_key(websocket):
@@ -530,106 +683,16 @@ async def audio_endpoint(websocket: WebSocket):
     print("[WS /ws/audio] Client connected.")
     try:
         while True:
-            data = await websocket.receive_json()
-            if data.get("event") != "audio_complete":
+            data = await _receive_message(websocket)
+            if data is None or data.get("event") != "audio_complete":
                 continue
-
-            t_start = time.perf_counter()
-            base64_audio = data.get("audio_data", "")
-            game_context = data.get("game_context", {})
-            speaker_id = data.get("speaker_id", "default_bot")
-            ref_audio_override = data.get("ref_audio")  # optional per-message override
-
-            if not whisper_model:
-                await websocket.send_json({"status": "error", "message": "STT not ready"})
-                continue
-
-            # 1. Decode audio to a temp file (Whisper needs a file path).
-            audio_bytes = base64.b64decode(base64_audio)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
-                tmp.write(audio_bytes)
-                tmp_path = tmp.name
-
-            # 2. STT
-            t_stt0 = time.perf_counter()
-            user_text = await asyncio.to_thread(transcribe_blocking, tmp_path)
             try:
-                os.remove(tmp_path)
-            except OSError:
-                pass
-            t_stt1 = time.perf_counter()
-
-            if not user_text:
-                await websocket.send_json({"status": "error", "message": "لم أسمعك جيداً"})
-                continue
-
-            print(f"[STT {t_stt1 - t_stt0:.2f}s] {user_text}")
-
-            # 3. LLM (streaming) → 4. TTS dispatch per sentence
-            ref_path = ref_audio_override or (
-                str(settings.tts_default_ref_audio_path)
-                if settings.tts_default_ref_audio_path
-                and settings.tts_default_ref_audio_path.exists()
-                else None
-            )
-
-            system_prompt = build_system_prompt(game_context)
-            full_prompt = f"System: {system_prompt}\nUser: {user_text}\nAssistant:"
-
-            t_llm0 = time.perf_counter()
-            buffer = ""
-            full_reply = ""
-            sentence_index = 0
-            tts_total_gen = 0.0  # accumulated wall-clock spent in TTS generation
-
-            # stream_ollama is an async generator: misconfig / network errors
-            # raise from inside the loop, not at construction. Catch here.
-            try:
-                async for chunk in stream_ollama(full_prompt):
-                    buffer += chunk
-                    full_reply += chunk
-                    # Try to extract complete sentences from the buffer.
-                    sentences = split_into_sentences(buffer)
-                    if len(sentences) >= 2:
-                        # Last item may be incomplete; keep it in the buffer.
-                        *complete, leftover = sentences
-                        buffer = leftover
-                        for s in complete:
-                            clean = clean_text_for_tts(s)
-                            if not clean:
-                                continue
-                            audio, tts_t = await synth_tts(clean, ref_path, voice_id=speaker_id)
-                            tts_total_gen += tts_t["gen_s"]
-                            await _send_audio_chunk(websocket, sentence_index, clean, audio, tts_t)
-                            sentence_index += 1
-            except RuntimeError as e:
-                await websocket.send_json({"status": "error", "message": str(e)})
-                continue
-
-            t_llm1 = time.perf_counter()
-
-            # Flush remaining buffer.
-            tail = clean_text_for_tts(buffer)
-            if tail:
-                audio, tts_t = await synth_tts(tail, ref_path, voice_id=speaker_id)
-                tts_total_gen += tts_t["gen_s"]
-                await _send_audio_chunk(websocket, sentence_index, tail, audio, tts_t)
-                sentence_index += 1
-
-            t_total = time.perf_counter() - t_start
-            await websocket.send_json({
-                "status": "done",
-                "full_text": full_reply.strip(),
-                "sentence_count": sentence_index,
-                "timings": {
-                    "stt_s": round(t_stt1 - t_stt0, 3),
-                    "llm_s": round(t_llm1 - t_llm0, 3),
-                    "tts_total_gen_s": round(tts_total_gen, 3),
-                    "total_s": round(t_total, 3),
-                },
-            })
-            print(f"[DONE {t_total:.2f}s] {sentence_index} sentence(s).")
-
+                await _handle_audio_turn(websocket, data)
+            except WebSocketDisconnect:
+                raise
+            except Exception as e:  # one bad turn must not kill the session
+                print(f"[WS /ws/audio] turn failed: {type(e).__name__}: {e}")
+                await websocket.send_json({"status": "error", "message": "حدث خطأ أثناء معالجة الصوت"})
     except WebSocketDisconnect:
         print("[WS /ws/audio] Client disconnected.")
 
@@ -659,7 +722,7 @@ async def clone_endpoint(websocket: WebSocket):
     """
     Request shape:
         { "text": "...", "ref_audio": "clones/playerXYZ.wav", "speaker_id": "playerXYZ" }
-    ref_audio is resolved relative to MAFIA_DATA_DIR if not absolute.
+    ref_audio must be a path relative to MAFIA_DATA_DIR (no absolute paths, no `..`).
     """
     if not check_ws_api_key(websocket):
         await websocket.close(code=4401)
@@ -668,30 +731,27 @@ async def clone_endpoint(websocket: WebSocket):
     print("[WS /ws/clone] Client connected.")
     try:
         while True:
-            data = await websocket.receive_json()
-            text = (data.get("text") or "").strip()
-            speaker_id = data.get("speaker_id", "clone")
+            data = await _receive_message(websocket)
+            if data is None:
+                continue
+            text = str(data.get("text") or "").strip()[:500]
+            speaker_id = _safe_voice_id(data.get("speaker_id"), "clone")
             ref_arg = data.get("ref_audio") or ""
             if not text:
                 await websocket.send_json({"status": "error", "message": "empty text"})
                 continue
 
-            ref_path: Optional[str] = None
-            if ref_arg:
-                p = Path(ref_arg)
-                if not p.is_absolute():
-                    p = settings.data_path / p
-                if p.exists():
-                    ref_path = str(p)
-                else:
-                    await websocket.send_json({
-                        "status": "error",
-                        "message": f"ref_audio not found: {p}",
-                    })
-                    continue
+            ref_path = resolve_ref_audio(ref_arg) if ref_arg else None
+            if ref_arg and ref_path is None:
+                await websocket.send_json({"status": "error", "message": "ref_audio not found"})
+                continue
 
-            clean = clean_text_for_tts(text)
-            audio, tts_t = await synth_tts(clean, ref_path, voice_id=speaker_id)
+            try:
+                clean = clean_text_for_tts(text)
+                audio, tts_t = await synth_tts(clean, ref_path, voice_id=speaker_id)
+            except Exception as e:
+                print(f"[WS /ws/clone] TTS failed: {type(e).__name__}: {e}")
+                audio, tts_t, clean = None, {}, text
             if audio is None:
                 await websocket.send_json({"status": "error", "message": "TTS failed"})
                 continue
@@ -707,6 +767,8 @@ async def clone_endpoint(websocket: WebSocket):
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    import uvicorn
+
     print(f">>> Binding {settings.host}:{settings.port}  "
           f"(API key {'enabled' if settings.api_key else 'DISABLED'})")
     uvicorn.run("main:app", host=settings.host, port=settings.port, log_level="warning")

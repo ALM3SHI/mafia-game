@@ -135,10 +135,10 @@ This is not a chatbot. This is a full-stack multiplayer game engine with:
 <td>
 
 ### 🎮 Full Game Engine
-- Complete Mafia game state machine
-- 8 game phases: lobby → reveal → testimony → day → night → reaction → voting → game-over
-- 10+ configurable roles (Doctor, Detective, Witch, Jester, Serial Killer...)
-- In-game store, card collection, profile system
+- Pure, unit-tested rules engine (`src/lib/game-logic.ts`)
+- Round flow: reveal → night → morning → testimony → discussion → voting
+- Roles: Mafia, Citizen, Doctor, Detective, Mayor, Jester
+- Bots that chat, vote and act at night; mafia bots follow a human mafia's pick
 
 </td>
 </tr>
@@ -154,12 +154,11 @@ This is not a chatbot. This is a full-stack multiplayer game engine with:
 </td>
 <td>
 
-### 🛡️ Production-Ready
-- Bearer token authentication
-- Health check endpoints
-- Detailed timing telemetry per turn
-- Cloud-portable (all config via env vars)
-- Zero hardcoded paths
+### 🛡️ Robust Backend
+- Optional API key (Bearer header or `?token=` for browsers)
+- Malformed frames never drop the connection
+- Voice reference paths sandboxed to the data dir
+- Health check + per-turn timing telemetry
 
 </td>
 </tr>
@@ -187,7 +186,6 @@ This is not a chatbot. This is a full-stack multiplayer game engine with:
 | Animation | **Framer Motion 12** | Smooth micro-animations |
 | State | **Zustand 5** | Game state management |
 | Icons | **Lucide React** | UI iconography |
-| Backend-as-a-Service | **Supabase** | Auth, realtime, database |
 
 ### Backend
 | Component | Technology | Purpose |
@@ -230,8 +228,10 @@ mafia-game/
 │   ├── store/
 │   │   └── useGameStore.ts          # Zustand game state machine
 │   └── lib/
-│       ├── game-logic.ts            # Role distribution, win conditions
-│       └── supabase.ts              # Database client
+│       ├── game-logic.ts            # Pure rules engine (roles, night, votes, wins)
+│       ├── game-types.ts            # Shared types
+│       ├── roles.ts                 # Role metadata (Arabic names, descriptions)
+│       └── __tests__/               # Vitest unit tests
 │
 ├── 🧠 game_backend/                 # FastAPI AI Backend
 │   ├── main.py                      # Orchestrator (STT→LLM→TTS pipeline)
@@ -329,8 +329,12 @@ ollama serve
 ```bash
 # From the project root
 npm install
+cp .env.example .env.local     # optional: point at a remote voice backend
 npm run dev
 ```
+
+The game is fully playable without the voice backend — bots still chat, vote
+and act; only the push-to-talk replies need it.
 
 > Open [http://localhost:3000](http://localhost:3000) to see the game UI.
 
@@ -364,7 +368,18 @@ All configuration is managed through environment variables for cloud portability
 
 <br>
 
-## 🧪 Performance Testing
+## 🧪 Tests
+
+```bash
+npm test                 # rules engine + store flow (Vitest)
+npm run lint && npm run typecheck
+
+cd game_backend
+pip install pytest httpx
+python -m pytest tests   # WebSocket protocol, auth, path sandboxing (ML deps stubbed)
+```
+
+## ⏱️ Performance Testing
 
 The project includes a built-in latency benchmark:
 
@@ -386,23 +401,21 @@ This measures:
 ### Roles System
 | Role | Team | Ability |
 |:---:|:---|:---|
-| 🔫 | **Mafia** | Kills one player each night |
-| 👤 | **Citizen** | Votes during the day |
-| 🏥 | **Doctor** | Saves one player each night (available at 6+ players) |
-| 🔍 | **Detective** | Investigates one player each night (available at 5+ players) |
-| 🧙 | **Witch** | One-time kill or save potion (available at 8+ players) |
-| 🛡️ | **Bodyguard** | Protects a player, dies if target is attacked |
-| 👑 | **Mayor** | Vote counts as double |
-| 👻 | **Medium** | Can communicate with dead players |
-| 🃏 | **Jester** | Wins if voted out by town |
-| 🔪 | **Serial Killer** | Independent killer, kills each night |
-| ⚖️ | **Executioner** | Wins if their target is voted out |
+| 🔫 **Mafia** | Mafia | Agree on one kill each night (max ⅓ of the table) |
+| 👤 **Citizen** | Town | Discuss and vote |
+| 💉 **Doctor** | Town | Protect one player (or self) each night — 5+ players |
+| 🔍 **Detective** | Town | Learn whether one player is mafia each night — 5+ players |
+| 👑 **Mayor** | Town | Day vote counts double — 6+ players |
+| 🃏 **Jester** | Neutral | Wins alone if voted out — 7+ players |
+
+Votes: majority eliminates; a tie, or "skip" having the most votes, eliminates nobody.
+Town wins when all mafia are gone; mafia wins once they are at least half of the living.
 
 ### Game Phases
 ```
-lobby → reveal → testimony → day → night → reaction → voting → game-over
-                    ↑                                        │
-                    └────────────────────────────────────────┘
+lobby → reveal → night → morning → testimony → discussion → voting ─┐
+                   ↑                                                │
+                   └────────────────────────────────────────────────┘
 ```
 
 <br>
@@ -415,7 +428,7 @@ lobby → reveal → testimony → day → night → reaction → voting → gam
 - [x] TTS disk caching
 - [x] Next.js web client with full game UI
 - [x] Unity C# client bridge
-- [x] Zustand game state machine
+- [x] Zustand game state machine + tested rules engine
 - [x] Performance benchmarking tool
 - [ ] Multiplayer via Supabase Realtime
 - [ ] Cloud GPU deployment (RunPod/Modal)

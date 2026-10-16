@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* next/font exposes the loaded families as --next-changa / --next-orbitron. */
+@theme inline {
+  --font-changa: var(--next-changa), sans-serif;
+  --font-orbitron: var(--next-orbitron), sans-serif;
+}
+
 :root {
   --background: #160709;
   --foreground: #f3e8d4;
@@ -8,47 +14,40 @@
   --neon-blue: #7f95a1;
   --neon-green: #7f8f5f;
   --neon-purple: #766078;
-  --panel-bg: rgba(28, 12, 13, 0.88);
-  --panel-border: rgba(243, 232, 212, 0.12);
 }
 
+html,
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Changa', sans-serif;
-  overflow: hidden;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100dvh;
 }
 
-@layer components {
-  .gothic-card {
-    @apply relative border-2 rounded-xl overflow-hidden shadow-2xl;
-    border-color: rgba(255, 255, 255, 0.1);
-    background-color: rgba(0, 0, 0, 0.8);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  
-  .gothic-button {
-    @apply px-6 py-2 border-2 border-[#cfb06f] text-[#cfb06f] font-bold rounded-lg shadow-lg;
-    background-color: #1e1e1e;
-    transition: all 0.2s active;
-  }
-  
-  .gothic-button:hover {
-    background-color: #cfb06f;
-    color: black;
-  }
-  
-  .gothic-button:active {
-    transform: translateY(4px);
-  }
-  
-  .neon-text-red { text-shadow: 0 0 10px var(--neon-red), 0 0 20px var(--neon-red); }
-  .neon-text-gold { text-shadow: 0 0 10px var(--neon-gold), 0 0 20px var(--neon-gold); }
+body {
+  font-family: var(--next-changa), sans-serif;
 }
 
-/* CRT Scanline Effect */
+/* ── 3D helpers (Tailwind v4 has no perspective-2000 / transform-style-3d) ── */
+.perspective-1000 { perspective: 1000px; }
+.perspective-2000 { perspective: 2000px; }
+.perspective-3000 { perspective: 3000px; }
+.transform-style-3d { transform-style: preserve-3d; }
+
+/* Subtle paper grain without hot-linking third-party textures. */
+.card-texture::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.25;
+  mix-blend-mode: overlay;
+  background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 2px, transparent 2px 4px);
+}
+
+.neon-text-red { text-shadow: 0 0 10px var(--neon-red), 0 0 20px var(--neon-red); }
+.neon-text-gold { text-shadow: 0 0 10px var(--neon-gold), 0 0 20px var(--neon-gold); }
+
+/* ── CRT scanlines ── */
 .crt-overlay {
   position: fixed;
   inset: 0;
@@ -59,19 +58,69 @@ body {
   box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.9);
 }
 
-/* 3D Perspective for Cards */
-.perspective-1000 {
-  perspective: 1000px;
+/* ── Landing-page arcade buttons (moved out of a broken <style jsx> @apply block) ── */
+.arcade-btn {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 13rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 32px;
+  border: 4px solid;
+  background: #1a1c26;
+  box-shadow: 0 12px 0 #000, 0 20px 40px rgba(0, 0, 0, 0.6);
+  transition: transform 0.25s, box-shadow 0.25s, background 0.25s;
+  overflow: hidden;
+  outline: none;
 }
+.arcade-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top right, transparent, rgba(255, 255, 255, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.arcade-btn:hover { transform: translateY(-0.5rem); background: #242736; }
+.arcade-btn:hover::before { opacity: 1; }
+.arcade-btn:active { transform: translateY(0.5rem); box-shadow: none; transition-duration: 0.05s; }
+.arcade-btn:focus-visible { outline: 3px solid var(--neon-gold); outline-offset: 4px; }
+.arcade-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
-/* Orientation Warning */
+.arcade-btn svg { width: 4rem; height: 4rem; margin-bottom: 1rem; color: white; opacity: 0.9; transition: transform 0.3s, filter 0.3s; }
+.arcade-btn:hover svg { transform: scale(1.1) rotate(3deg); filter: drop-shadow(0 0 15px white); }
+.arcade-btn span { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.1em; color: white; }
+.arcade-btn small { margin-top: 0.25rem; font-size: 0.7rem; color: rgba(255, 255, 255, 0.4); }
+
+.arcade-btn.small { height: 10rem; }
+.arcade-btn.small svg { width: 3rem; height: 3rem; margin-bottom: 0.5rem; }
+.arcade-btn.small span { font-size: 1.25rem; }
+
+.btn-create { border-color: #b64f43; box-shadow: 0 12px 0 #4f221d, 0 15px 40px rgba(182, 79, 67, 0.15); }
+.btn-join { border-color: #7f95a1; box-shadow: 0 12px 0 #44515b, 0 15px 40px rgba(127, 149, 161, 0.15); }
+.btn-deck { border-color: #766078; box-shadow: 0 8px 0 #433445; }
+.btn-store { border-color: #7f8f5f; box-shadow: 0 8px 0 #404b2e; }
+.btn-rules { border-color: #cfb06f; box-shadow: 0 8px 0 #6e5329; }
+
+/* ── Orientation warning: only for small portrait screens ── */
 .orientation-warning {
-  @apply fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center text-center p-8;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: black;
   display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  .orientation-warning { display: flex; }
 }
 
-@media (orientation: portrait) {
-  .orientation-warning {
-    display: flex;
-  }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

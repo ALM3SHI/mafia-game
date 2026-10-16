@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Archived prototypes — not part of the app.
+    "legacy_dir/**",
   ]),
 ]);
 
