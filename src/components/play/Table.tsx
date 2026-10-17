@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen, Crosshair, Eye, LogOut, MessageSquare, ScrollText, Users, X } from 'lucide-react';
 import { useGame } from '@/client/game-store';
 import { ambience, sfx } from '@/client/audio';
+import { gameNow } from '@/client/game-store';
 import { useProfile } from '@/client/profile';
 import { ROLE_INFO } from '@/game/roles';
 import { SKIP_VOTE, type Phase, type PlayerView, type PublicPlayer } from '@/game/types';
 import { RainCanvas } from '../atmosphere';
-import { CardBack, RoleCard, RoleMedallion } from '../cards';
+import { RoleCard, RoleMedallion } from '../cards';
 import { SettingsButton } from '../settings';
 import { Button, cn } from '../ui';
 import { ChatBox } from './ChatBox';
@@ -17,6 +18,7 @@ import { GameOver } from './GameOver';
 import { Seat } from './Seat';
 import { isMafiaRole, useCountdown } from './hooks';
 import { VoiceButton } from './VoiceButton';
+import { ChipLayer, DeckReveal, Flashlight, MuzzleFlash, ParallaxImage, PhaseCinematic, TargetCursor, useParallax, useShake, useTension } from './fx';
 
 const PHASE_TITLE: Record<Phase, string> = {
   lobby: 'الانتظار',
@@ -67,12 +69,11 @@ function hasAction(meP: PublicPlayer | undefined, view: PlayerView) {
 export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void }) {
   const send = useGame(s => s.send);
   const voiceOn = useProfile(s => s.prefs.voice);
+  const cardBack = useProfile(s => s.equipped.back);
   const meP = view.players.find(p => p.id === view.meId)!;
   const others = view.players.filter(p => p.id !== view.meId);
   const left = useCountdown(view.phaseEndsAt);
   const [panel, setPanel] = useState<'chat' | 'log' | null>(null);
-  const [flash, setFlash] = useState(false);
-  const [banner, setBanner] = useState<{ title: string; sub?: string; tone: 'night' | 'day' | 'blood' } | null>(null);
   const [peek, setPeek] = useState(false);
   const night = view.phase === 'night';
   const acting = night && hasAction(meP, view);
@@ -80,63 +81,47 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
   const myVote = view.votes[view.meId];
   const alive = view.players.filter(p => p.alive);
 
-  // Phase transitions → banners, sound, ambience. Keyed on the phase only so
-  // frequent view updates don't cancel the banner's hide timer.
-  const prevPhase = useRef(view.phase);
-  const prevAlive = useRef(alive.length);
-  const viewRef = useRef(view);
+  // Ambience follows the phase; cinematics handle the one-shot sounds.
   useEffect(() => {
-    viewRef.current = view;
-  });
-  useEffect(() => {
-    const v = viewRef.current;
-    const prev = prevPhase.current;
-    prevPhase.current = v.phase;
-    ambience.setMood(v.phase === 'night' ? 'night' : v.phase === 'voting' || v.phase === 'verdict' ? 'tense' : 'day');
-    if (prev === v.phase) return;
-    let b: typeof banner = null;
-    if (v.phase === 'night') {
-      sfx('night');
-      b = { title: 'حلّ الليل', sub: `الليلة ${v.round}`, tone: 'night' };
-    } else if (v.phase === 'morning') {
-      sfx('day');
-      b = { title: 'طلع الصبح', sub: v.lastDeaths.length ? 'والمدينة تعدّ موتاها' : 'وما مات أحد', tone: 'day' };
-    } else if (v.phase === 'voting') {
-      sfx('heartbeat');
-      b = { title: 'ساعة الحساب', sub: 'صوّتوا', tone: 'blood' };
-    } else if (v.phase === 'verdict' && v.lastDeaths[0]) {
-      const p = v.players.find(x => x.id === v.lastDeaths[0]);
-      b = { title: `طُرد ${p?.name ?? ''}`, sub: p?.role ? `كان ${ROLE_INFO[p.role].name}` : undefined, tone: 'blood' };
-    }
-    const show = setTimeout(() => setBanner(b), 0);
-    const hide = b ? setTimeout(() => setBanner(null), 2200) : undefined;
-    return () => {
-      clearTimeout(show);
-      if (hide) clearTimeout(hide);
-      setTimeout(() => setBanner(null), 0);
-    };
+    ambience.setMood(view.phase === 'night' ? 'night' : view.phase === 'voting' || view.phase === 'verdict' ? 'tense' : 'day');
   }, [view.phase]);
+  useTension(view, left);
 
+  const { controls: shakeControls, shake } = useShake();
+  const { px, py, bind } = useParallax();
+  const [muzzle, setMuzzle] = useState<string | null>(null);
+  const onImpact = useCallback(
+    (strength: number, seatId?: string) => {
+      void shake(strength);
+      if (seatId) setMuzzle(seatId);
+    },
+    [shake]
+  );
+
+  // Speech bubbles: each player's most recent line, for a few seconds.
+  const [now, setNow] = useState(() => gameNow());
   useEffect(() => {
-    if (alive.length < prevAlive.current) {
-      sfx('kill');
-      setFlash(true);
-      const t = setTimeout(() => setFlash(false), 180);
-      prevAlive.current = alive.length;
-      return () => clearTimeout(t);
+    const id = setInterval(() => setNow(gameNow()), 500);
+    return () => clearInterval(id);
+  }, []);
+  const bubbles = useMemo(() => {
+    const out: Record<string, { text: string; tone: 'public' | 'mafia' }> = {};
+    for (const m of view.chat) {
+      if (m.authorId === 'system' || m.channel === 'dead' || now - m.at > 5000) continue;
+      out[m.authorId] = { text: m.text, tone: m.channel === 'mafia' ? 'mafia' : 'public' };
     }
-    prevAlive.current = alive.length;
-  }, [alive.length]);
+    return out;
+  }, [view.chat, now]);
 
   // Seat interaction
   const targetable = (p: PublicPlayer) => (voting ? p.alive && p.id !== meP.id : acting ? nightTargetable(meP, p, view) : false);
   const clickSeat = (p: PublicPlayer) => {
     if (!targetable(p)) return;
     if (voting) {
-      sfx('vote');
       send({ type: 'vote', targetId: p.id });
     } else if (acting) {
-      sfx('click');
+      const cue = meP.role === 'detective' ? 'paper' : meP.role === 'doctor' || meP.role === 'bodyguard' ? 'card-flip' : 'knock';
+      sfx(cue, { detune: true });
       send({ type: 'night', targetId: p.id });
     }
   };
@@ -159,6 +144,7 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
     voteCount: view.voteCounts[p.id],
     voters: view.phase === 'voting' || view.phase === 'verdict' ? votersOf(p.id) : undefined,
     hasVoted: view.phase === 'voting' && view.votedIds.includes(p.id),
+    bubble: bubbles[p.id],
     onClick: () => clickSeat(p),
   });
 
@@ -170,17 +156,19 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
   });
 
   return (
-    <div className="relative z-10 flex min-h-dvh flex-col overflow-hidden sm:h-dvh sm:min-h-0">
-      {/* Scene */}
-      <div className="fixed inset-0 -z-10">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/art/table.webp" alt="" className={cn('h-full w-full object-cover transition-[filter] duration-[2000ms]', night ? 'night-tint' : 'opacity-60 [filter:sepia(0.25)_brightness(0.7)]')} />
+    <motion.div animate={shakeControls} {...bind} className="relative z-10 flex min-h-dvh flex-col overflow-hidden sm:h-dvh sm:min-h-0">
+      {/* Scene (parallax) */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <ParallaxImage src="/art/table.webp" px={px} py={py} depth={18} className={cn('h-full w-full object-cover transition-[filter] duration-[2000ms]', night ? 'night-tint' : 'opacity-60 [filter:sepia(0.25)_brightness(0.7)]')} />
         <div className={cn('absolute inset-0 transition-colors duration-[2000ms]', night ? 'bg-[#050812]/70' : 'bg-ink/40')} />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,transparent_20%,#0b0809_80%)]" />
       </div>
       <RainCanvas intensity={night ? 1.3 : 0.7} />
 
-      <AnimatePresence>{flash && <motion.div className="pointer-events-none fixed inset-0 z-[150] bg-white" initial={{ opacity: 0.9 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} />}</AnimatePresence>
+      <TargetCursor mode={acting ? (meP.role as 'mafia') : voting ? 'vote' : null} />
+      <ChipLayer view={view} />
+      <PhaseCinematic view={view} onImpact={onImpact} />
+      {muzzle && <MuzzleFlash seatId={muzzle} onDone={() => setMuzzle(null)} />}
 
       {/* Top HUD */}
       <header className="relative z-20 flex items-start justify-between gap-2 p-3 sm:p-5">
@@ -216,6 +204,7 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           {/* Desktop ellipse */}
           <div className="relative hidden min-h-[260px] flex-1 sm:block">
+            <Flashlight active={acting} />
             {others.map((p, i) => (
               <div key={p.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${positions[i].left}%`, top: `${positions[i].top}%` }}>
                 <Seat {...seatProps(p)} />
@@ -277,23 +266,11 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
         )}
       </AnimatePresence>
 
-      {/* Phase banners */}
-      <AnimatePresence>
-        {banner && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none fixed inset-0 z-[90] grid place-items-center bg-black/55">
-            <motion.div initial={{ scale: 1.3, letterSpacing: '0.4em' }} animate={{ scale: 1, letterSpacing: '0em' }} transition={{ duration: 0.9, ease: 'easeOut' }} className="text-center">
-              <p className={cn('font-display text-7xl sm:text-8xl', banner.tone === 'night' ? 'text-rain' : banner.tone === 'blood' ? 'text-blood-hi' : 'brass-text')}>{banner.title}</p>
-              {banner.sub && <p className="mt-3 font-kufi text-xl text-fog/80">{banner.sub}</p>}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Role reveal */}
-      <AnimatePresence>{view.phase === 'reveal' && meP.role && <RoleReveal view={view} me={meP} left={left} />}</AnimatePresence>
+      <AnimatePresence>{view.phase === 'reveal' && meP.role && <DeckReveal view={view} me={meP} left={left} cardBack={cardBack} />}</AnimatePresence>
 
       {view.phase === 'game-over' && <GameOver view={view} onLeave={onLeave} />}
-    </div>
+    </motion.div>
   );
 }
 
@@ -468,37 +445,5 @@ function SidePanel({ view }: { view: PlayerView }) {
         </div>
       )}
     </>
-  );
-}
-
-function RoleReveal({ view, me, left }: { view: PlayerView; me: PublicPlayer; left: number }) {
-  const cardBack = useProfile(s => s.equipped.back);
-  const mates = view.players.filter(p => p.id !== me.id && isMafiaRole(p.role));
-  useEffect(() => sfx('reveal'), []);
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[110] grid place-items-center overflow-y-auto bg-black/90 p-6 backdrop-blur">
-      <div className="flex flex-col items-center gap-5 text-center">
-        <p className="font-kufi tracking-[0.3em] text-mist">بطاقتك</p>
-        <div className="relative w-60 sm:w-72" style={{ perspective: 1400 }}>
-          <motion.div
-            initial={{ rotateY: 180, scale: 0.8 }}
-            animate={{ rotateY: 0, scale: 1 }}
-            transition={{ delay: 0.6, type: 'spring', stiffness: 50, damping: 12 }}
-            className="relative"
-            style={{ transformStyle: 'preserve-3d' }}
-          >
-            <div style={{ backfaceVisibility: 'hidden' }}>
-              <RoleCard role={me.role!} />
-            </div>
-            <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-              <CardBack design={cardBack} className="h-full w-full" />
-            </div>
-          </motion.div>
-        </div>
-        <p className="max-w-md text-fog/90">{ROLE_INFO[me.role!].description}</p>
-        {mates.length > 0 && <p className="font-kufi text-blood-hi">🤝 عائلتك: {mates.map(m => `${m.name} (${ROLE_INFO[m.role!].name})`).join('، ')}</p>}
-        <p className="font-kufi text-sm text-mist">تبدأ الليلة خلال {left} ثوانٍ</p>
-      </div>
-    </motion.div>
   );
 }

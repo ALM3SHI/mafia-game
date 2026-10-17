@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bot, Check, Copy, Crown, LogOut, Play, Settings2, Share2, UserMinus, Users } from 'lucide-react';
 import { useGame } from '@/client/game-store';
@@ -22,6 +22,11 @@ export function Lobby({ view, onLeave }: { view: PlayerView; onLeave: () => void
   const notReady = view.players.filter(p => !p.ready && !p.isHost);
   const canStart = view.players.length >= MIN_PLAYERS && notReady.length === 0;
   const patch = (p: Partial<GameSettings>) => send({ type: 'settings', patch: p });
+  const seen = useRef(view.players.length);
+  useEffect(() => {
+    if (view.players.length > seen.current) sfx(view.players.at(-1)?.isBot ? 'card-flip' : 'knock', { detune: true });
+    seen.current = view.players.length;
+  }, [view.players]);
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/play?join=${view.code}` : '';
   const copy = async (text: string) => {

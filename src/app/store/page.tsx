@@ -33,10 +33,10 @@ export default function StorePage() {
     }
     const r = p.buy(item.id);
     if (r.ok) {
-      sfx('notify');
+      sfx('jingle-buy');
       toast(`اشتريت ${item.name} وتم تجهيزه ✨`);
     } else {
-      sfx('error');
+      sfx('jingle-error');
       toast(r.error ?? 'تعذّر الشراء', 'error');
     }
   };

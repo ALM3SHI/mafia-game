@@ -1,7 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Bot, Crown, Mic, Skull, WifiOff } from 'lucide-react';
+import { useRef } from 'react';
+import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
+import { Bot, Crown, Mic, WifiOff } from 'lucide-react';
+import { sfx } from '@/client/audio';
+import { GameIcon } from '../GameIcon';
+import { SpeechBubble } from './fx';
 import { ROLE_INFO } from '@/game/roles';
 import type { PublicPlayer } from '@/game/types';
 import { RoleMedallion } from '../cards';
@@ -29,24 +33,57 @@ export interface SeatProps {
   revealTeam?: boolean;
   onClick?: () => void;
   size?: 'md' | 'lg';
+  bubble?: { text: string; tone: 'public' | 'mafia' };
 }
 
-export function Seat({ player, isMe, speaking, targetable, chosen, teamMarked, voteCount, voters, hasVoted, onClick, size = 'md' }: SeatProps) {
+let lastHover = 0;
+
+export function Seat({ player, isMe, speaking, targetable, chosen, teamMarked, voteCount, voters, hasVoted, onClick, size = 'md', bubble }: SeatProps) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const rotateX = useSpring(rx, { stiffness: 200, damping: 15 });
+  const rotateY = useSpring(ry, { stiffness: 200, damping: 15 });
+  const onMove = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse' || !ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    rx.set(((e.clientY - r.top) / r.height - 0.5) * -22);
+    ry.set(((e.clientX - r.left) / r.width - 0.5) * 22);
+  };
+  const onLeave = () => {
+    rx.set(0);
+    ry.set(0);
+  };
+  const onEnter = () => {
+    const t = performance.now();
+    if (t - lastHover > 120 && player.alive) {
+      lastHover = t;
+      sfx('hover', { volume: targetable ? 0.6 : 0.25, detune: true });
+    }
+  };
   const dead = !player.alive;
   const dim = size === 'lg' ? 'h-20 w-20 text-4xl sm:h-24 sm:w-24 sm:text-5xl' : 'h-14 w-14 text-3xl sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl';
   const role = player.role;
   const mafiaMate = !isMe && role && ROLE_INFO[role].team === 'mafia' && player.alive;
   return (
     <motion.button
+      ref={ref}
       type="button"
-      layout
-      disabled={!targetable}
-      onClick={onClick}
-      whileHover={targetable ? { scale: 1.08, y: -4 } : undefined}
-      whileTap={targetable ? { scale: 0.96 } : undefined}
-      className={cn('group relative flex w-24 flex-col items-center gap-1 outline-none sm:w-28', targetable ? 'cursor-crosshair' : 'cursor-default')}
+      data-seat={player.id}
+      data-target={targetable ? '1' : undefined}
+      aria-disabled={!targetable}
+      tabIndex={targetable ? 0 : -1}
+      onClick={() => targetable && onClick?.()}
+      onPointerMove={onMove}
+      onPointerLeave={onLeave}
+      onPointerEnter={onEnter}
+      style={{ rotateX, rotateY, transformPerspective: 500 }}
+      whileHover={targetable ? { scale: 1.1, y: -6 } : { scale: 1.03 }}
+      whileTap={targetable ? { scale: 0.92 } : undefined}
+      className={cn('group relative flex w-24 flex-col items-center gap-1 outline-none sm:w-28', targetable ? 'cursor-none sm:cursor-none' : 'cursor-default')}
       aria-label={`${player.name}${dead ? ' (ميت)' : ''}`}
     >
+      <AnimatePresence>{bubble && player.alive && <SpeechBubble key={bubble.text} text={bubble.text} tone={bubble.tone} />}</AnimatePresence>
       {/* Spotlight for the current speaker */}
       {speaking && <span className="absolute -top-10 left-1/2 h-36 w-28 -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(236,212,154,0.35),transparent_70%)] blur-sm" />}
 
@@ -65,9 +102,9 @@ export function Seat({ player, isMe, speaking, targetable, chosen, teamMarked, v
       >
         <span className={cn(dead && 'opacity-60')}>{player.avatar}</span>
         {dead && (
-          <span className="absolute inset-0 grid place-items-center rounded-full bg-black/50">
-            <Skull className="h-1/2 w-1/2 text-fog/70" />
-          </span>
+          <motion.span initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute inset-0 grid place-items-center rounded-full bg-black/55">
+            <GameIcon name="coffin" className="h-1/2 w-1/2 text-fog/70" />
+          </motion.span>
         )}
         {role && (
           <span className="absolute -bottom-1 -left-1">

@@ -39,7 +39,8 @@ npm run dev
 | 🤖 **Bots that think** | Per-bot suspicion that reacts to accusations in chat, voting patterns, lynch results and detective findings. Detective bots announce mafia they find; mafia bots coordinate and frame their accusers |
 | 💬 **Three chat channels** | Public table chat (only the speaker talks during testimony), a private mafia channel at night, and a channel for the dead |
 | 🎨 **Noir Arabic art direction** | Aref Ruqaa / Reem Kufi / IBM Plex Arabic (self-hosted), rain, film grain, the city newspaper, role cards with art-deco medallions |
-| 🎵 **Generated ambience** | WebAudio rain + a minor-key noir pad that shifts between day, night and the vote — no music files |
+| 🎬 **Cinematic, interactive table** | Venetian blinds + lightning at nightfall, a spinning newspaper typed out at dawn with a gunshot and screen-shake, a drum-roll and gavel slam at the verdict, poker chips flying to whoever gets voted, a flashlight that follows your cursor at night, role-themed target reticles, speech bubbles over the seats, parallax backgrounds, a deck that fans out to deal your card |
+| 🎵 **Sound design** | 35 CC0 sounds (Kenney + a noir SFX kit): rain and noir beds that crossfade between day and night, a heartbeat that speeds up as the vote runs out, typewriter, church bell, card shuffles, chips, gavel, thunder |
 | 🏆 **Progression** | Stats per role, 12 achievements, match history, gems, and a cosmetic store (card backs, avatar frames, titles) — saved in the browser |
 | 🎙️ **AI voice (optional)** | In bot games, hold to talk; Whisper → LLM → cloned TTS answers as a bot (see `game_backend/`) |
 | 📱 **Responsive** | Works on phones in portrait |
@@ -102,6 +103,12 @@ python main.py                                   # ws://localhost:8000/ws/audio
 Then in the game: ⚙️ Settings → "ردود صوتية بالذكاء الاصطناعي". Requires
 [Ollama](https://ollama.com) and, for cloned voices, the Chatterbox TTS studio
 (see `game_backend/.env.example`).
+
+## 🙏 Credits
+
+Icons: [game-icons.net](https://game-icons.net) (Lorc, Delapouite & contributors) — CC BY 3.0.
+Sounds: [Kenney](https://kenney.nl) packs and the [WHODUNIT?! noir SFX kit](https://github.com/GeorgeShani/whodunit) — CC0, via [CC0-Public-Domain-Sounds](https://github.com/lavenderdotpet/CC0-Public-Domain-Sounds).
+Full list in-game at `/credits`.
 
 ## 📄 License
 

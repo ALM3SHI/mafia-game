@@ -1,24 +1,24 @@
 'use client';
 
-import { Crosshair, Drama, Landmark, Search, Shield, Skull, Syringe, User, VenetianMask, type LucideIcon } from 'lucide-react';
 import { ROLE_INFO } from '@/game/roles';
 import type { Role } from '@/game/types';
+import { GameIcon, type GameIconName } from './GameIcon';
 import { cn } from './ui';
 
-export const ROLE_ICON: Record<Role, LucideIcon> = {
-  mafia: Skull,
-  godfather: VenetianMask,
-  citizen: User,
-  doctor: Syringe,
-  detective: Search,
-  bodyguard: Shield,
-  vigilante: Crosshair,
-  mayor: Landmark,
-  jester: Drama,
+/** Illustrated emblem per role (game-icons.net, CC BY 3.0). */
+export const ROLE_ICON: Record<Role, GameIconName> = {
+  mafia: 'revolver',
+  godfather: 'fedora',
+  citizen: 'person',
+  doctor: 'syringe',
+  detective: 'spy',
+  bodyguard: 'heart-shield',
+  vigilante: 'crosshair',
+  mayor: 'crown',
+  jester: 'jester-hat',
 };
 
 export function RoleMedallion({ role, size = 56, className }: { role: Role; size?: number; className?: string }) {
-  const Icon = ROLE_ICON[role];
   const info = ROLE_INFO[role];
   return (
     <span
@@ -30,7 +30,9 @@ export function RoleMedallion({ role, size = 56, className }: { role: Role; size
         boxShadow: `0 0 0 2px #c9a45c, 0 0 0 4px #120d0c, 0 0 0 5px #7d6331, 0 6px 18px rgba(0,0,0,.7)`,
       }}
     >
-      <Icon style={{ width: size * 0.5, height: size * 0.5 }} className="text-brass-hi drop-shadow" strokeWidth={1.6} />
+      <span style={{ width: size * 0.58, height: size * 0.58 }} className="block text-brass-hi drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+        <GameIcon name={ROLE_ICON[role]} className="h-full w-full" />
+      </span>
     </span>
   );
 }
@@ -43,6 +45,9 @@ export function RoleCard({ role, className, compact = false }: { role: Role; cla
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/art/${info.art}.webp`} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
       <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, transparent 35%, ${info.accent}55 60%, #0b0809 88%)` }} />
+      <span className="absolute right-3 top-3 h-[22%] w-[22%] opacity-90" style={{ color: info.accent, filter: 'drop-shadow(0 0 10px rgba(0,0,0,.9))' }}>
+        <GameIcon name={ROLE_ICON[role]} className="h-full w-full text-brass-hi/90" />
+      </span>
       <div className="absolute inset-2 rounded-lg border border-brass/30" />
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 p-3 text-center">
         <RoleMedallion role={role} size={compact ? 34 : 52} className="-mt-6 mb-1" />

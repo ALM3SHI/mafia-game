@@ -36,7 +36,7 @@ export function Button({
       disabled={disabled}
       whileTap={disabled ? undefined : { scale: 0.97 }}
       onClick={e => {
-        if (!disabled) sfx('click', 0.5);
+        if (!disabled) sfx('click', 0.7);
         onClick?.(e);
       }}
       className={cn(
@@ -47,6 +47,10 @@ export function Button({
         className
       )}
       {...rest}
+      onPointerEnter={e => {
+        if (!disabled && e.pointerType === 'mouse') sfx('hover', { volume: 0.2, detune: true });
+        rest.onPointerEnter?.(e);
+      }}
     >
       {children}
     </motion.button>

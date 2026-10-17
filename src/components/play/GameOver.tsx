@@ -9,7 +9,7 @@ import { useProfile, type Achievement } from '@/client/profile';
 import { ROLE_INFO } from '@/game/roles';
 import { didWin } from '@/game/rules';
 import type { PlayerView } from '@/game/types';
-import { RoleMedallion } from '../cards';
+import { CardBack, RoleMedallion } from '../cards';
 import { Button, Ornament, cn } from '../ui';
 
 const WIN_TITLE = { town: 'انتصر المواطنون', mafia: 'انتصرت المافيا', jester: 'فاز المهرّج' } as const;
@@ -23,7 +23,8 @@ export function GameOver({ view, onLeave }: { view: PlayerView; onLeave: () => v
 
   useEffect(() => {
     const r = useProfile.getState().recordMatch(view);
-    sfx(won ? 'win' : 'lose');
+    sfx(view.winner === 'town' ? 'win-town' : view.winner === 'mafia' ? 'win-mafia' : 'jingle-win');
+    if (won) sfx('jingle-win', { delay: 0.2, volume: 0.6 });
     const t = setTimeout(() => r && setReward(r), 0);
     return () => clearTimeout(t);
     // record once per game-over view
@@ -35,7 +36,8 @@ export function GameOver({ view, onLeave }: { view: PlayerView; onLeave: () => v
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[160] overflow-y-auto bg-black/90 backdrop-blur-md">
-      <div className="mx-auto flex min-h-full max-w-4xl flex-col items-center px-4 py-10 text-center">
+      <CardRain tone={view.winner === 'town' ? 'brass' : 'blood'} />
+      <div className="relative mx-auto flex min-h-full max-w-4xl flex-col items-center px-4 py-10 text-center">
         <motion.p initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className={cn('font-kufi text-lg', won ? 'text-jade' : 'text-blood-hi')}>
           {won ? 'فزت!' : 'خسرت هذه المرة'}
         </motion.p>
@@ -124,5 +126,33 @@ export function GameOver({ view, onLeave }: { view: PlayerView; onLeave: () => v
         </div>
       </div>
     </motion.div>
+  );
+}
+
+const RAIN = Array.from({ length: 18 }, (_, i) => {
+  const r = (n: number) => {
+    const x = Math.sin((i + 1) * n * 12.9898) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  return { left: r(1) * 100, delay: r(2) * 3, dur: 4 + r(3) * 4, rot: r(4) * 720 - 360, size: 34 + r(5) * 30 };
+});
+
+/** Playing cards tumbling down behind the results. */
+function CardRain({ tone }: { tone: 'brass' | 'blood' }) {
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+      {RAIN.map((c, i) => (
+        <motion.div
+          key={i}
+          className="absolute -top-24"
+          style={{ left: `${c.left}%`, width: c.size }}
+          initial={{ y: -120, rotate: 0, opacity: 0 }}
+          animate={{ y: '110vh', rotate: c.rot, opacity: [0, 0.8, 0.8, 0] }}
+          transition={{ duration: c.dur, delay: c.delay, repeat: Infinity, ease: 'linear' }}
+        >
+          <CardBack design={tone === 'brass' ? 'back-classic' : 'back-crimson'} className="w-full" />
+        </motion.div>
+      ))}
+    </div>
   );
 }
