@@ -170,7 +170,7 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
   });
 
   return (
-    <div className="relative z-10 flex min-h-dvh flex-col overflow-hidden">
+    <div className="relative z-10 flex min-h-dvh flex-col overflow-hidden sm:h-dvh sm:min-h-0">
       {/* Scene */}
       <div className="fixed inset-0 -z-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -211,11 +211,11 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
         </div>
       </header>
 
-      <div className="relative z-10 flex flex-1 gap-4 px-3 pb-3 sm:px-5">
+      <div className="relative z-10 flex min-h-0 flex-1 gap-4 px-3 pb-3 sm:px-5">
         {/* Stage */}
-        <div className="relative flex min-w-0 flex-1 flex-col">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           {/* Desktop ellipse */}
-          <div className="relative hidden flex-1 sm:block" style={{ minHeight: 420 }}>
+          <div className="relative hidden min-h-[260px] flex-1 sm:block">
             {others.map((p, i) => (
               <div key={p.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${positions[i].left}%`, top: `${positions[i].top}%` }}>
                 <Seat {...seatProps(p)} />
@@ -237,7 +237,7 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
           </div>
 
           {/* Action bar */}
-          <div className="mt-3 flex flex-col items-center gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mt-3 flex shrink-0 flex-col items-center gap-3 sm:flex-row sm:items-end sm:justify-between">
             <MyCard view={view} me={meP} peek={peek} setPeek={setPeek} />
             <ActionBar view={view} me={meP} acting={acting} voting={voting} myVote={myVote} voiceOn={voiceOn} />
             <div className="hidden sm:block">
@@ -247,7 +247,7 @@ export function Table({ view, onLeave }: { view: PlayerView; onLeave: () => void
         </div>
 
         {/* Side panel (desktop) */}
-        <aside className="deco-panel hidden w-[340px] shrink-0 flex-col overflow-hidden p-0 lg:flex" style={{ maxHeight: 'calc(100dvh - 140px)' }}>
+        <aside className="deco-panel hidden min-h-0 w-[340px] shrink-0 flex-col overflow-hidden p-0 lg:flex">
           <SidePanel view={view} />
         </aside>
       </div>
