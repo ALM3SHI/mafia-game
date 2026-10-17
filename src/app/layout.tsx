@@ -1,26 +1,32 @@
-import type { Metadata } from 'next';
-import { Changa, Orbitron } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import '@fontsource/aref-ruqaa/arabic-400.css';
+import '@fontsource/aref-ruqaa/arabic-700.css';
+import '@fontsource/reem-kufi/arabic-500.css';
+import '@fontsource/reem-kufi/arabic-700.css';
+import '@fontsource/reem-kufi/latin-700.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-400.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-600.css';
+import '@fontsource/ibm-plex-sans-arabic/latin-400.css';
 import './globals.css';
-import CRTOverlay from '@/components/shared/CRTOverlay';
-
-const changa = Changa({ subsets: ['arabic', 'latin'], weight: ['400', '600', '800'], variable: '--next-changa' });
-const orbitron = Orbitron({ subsets: ['latin'], weight: ['700', '900'], variable: '--next-orbitron' });
+import { Providers } from '@/components/providers';
 
 export const metadata: Metadata = {
-  title: 'MAFIA | لعبة المافيا',
-  description: 'لعبة مافيا عربية ضد بوتات ذكية بالصوت',
+  title: 'المافيا — مدينة لا تنام',
+  description: 'لعبة مافيا عربية بطابع نوار: العب ضد بوتات ذكية أو مع أصحابك أونلاين.',
+  icons: { icon: '/favicon.svg' },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0b0809',
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl" className={`${changa.variable} ${orbitron.variable}`}>
-      <body className="antialiased">
-        <CRTOverlay />
-        <div className="orientation-warning">
-          <div className="font-orbitron text-4xl text-[#cfb06f] mb-4">🔄</div>
-          <p className="font-changa text-xl text-white/60">يرجى تدوير جهازك للوضع الأفقي للعب</p>
-        </div>
-        <main className="relative z-10">{children}</main>
+    <html lang="ar" dir="rtl">
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

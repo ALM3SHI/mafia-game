@@ -1,68 +1,67 @@
-import Link from 'next/link';
-import { ROLE_INFO } from '@/lib/roles';
-import type { Role } from '@/lib/game-types';
+import { ALL_ROLES, ROLE_INFO } from '@/game/roles';
+import { RoleCard } from '@/components/cards';
+import { PageShell } from '@/components/page-shell';
+import { Panel } from '@/components/ui';
 
-const ROLES: Role[] = ['mafia', 'citizen', 'doctor', 'detective', 'mayor', 'jester'];
-
-const PHASES = [
-  ['🎴 كشف الأدوار', 'كل لاعب يشوف دوره سراً. المافيا يعرفون بعض.'],
-  ['🌙 الليل', 'المافيا تختار ضحية، الطبيب يحمي لاعباً، والمحقق يكشف لاعباً.'],
-  ['☀️ الصباح', 'يُعلن من مات (أو أن الطبيب أنقذه).'],
-  ['🎙️ الشهادات', 'كل لاعب حي يتكلم بدوره لوقت محدد.'],
-  ['🗣️ النقاش', 'نقاش مفتوح للجميع.'],
-  ['⚖️ التصويت', 'الأغلبية تطرد لاعباً. التعادل أو أغلبية "تجاوز" = لا أحد يُطرد.'],
+const PHASES: [string, string][] = [
+  ['🎴 كشف الأدوار', 'كل لاعب يشوف بطاقته سراً. أفراد المافيا يعرفون بعض.'],
+  ['🌙 الليل', 'المافيا تختار ضحية (والعرّاب يحسم). الطبيب يحمي، المحقق يحقق، الحارس يحرس، والقنّاص قد يطلق رصاصته. العائلة تقدر تتهامس في دردشة خاصة.'],
+  ['☀️ الصباح', 'جريدة المدينة تعلن من مات (أو أن أحداً نجا بأعجوبة).'],
+  ['🎙️ الشهادات', 'كل لاعب حي يتكلم بدوره، والباقي يسمعون. اللي يخلّص قبل وقته يضغط "أنهيت كلامي".'],
+  ['🗣️ النقاش', 'الكلام مفتوح للجميع: اتهامات، دفاع، ادعاء أدوار.'],
+  ['⚖️ التصويت', 'اضغط على صورة لاعب لتصوّت عليه، أو تجاوز. الأغلبية تطرد. التعادل أو أغلبية التجاوز = لا أحد يُطرد. صوت العمدة بصوتين.'],
 ];
 
 export default function RulesPage() {
   return (
-    <div className="min-h-dvh bg-[#0a0305] p-8">
-      <div className="max-w-4xl mx-auto space-y-12">
-        <div className="flex justify-between items-center">
-          <h1 className="font-changa text-5xl font-black text-[#cfb06f]">القوانين</h1>
-          <Link href="/" className="px-6 py-2 border-2 border-[#7f95a1] text-[#7f95a1] rounded-lg font-bold hover:bg-[#7f95a1] hover:text-black transition-colors">
-            العودة
-          </Link>
-        </div>
-
-        <section>
-          <h2 className="text-2xl font-black text-white mb-4">الهدف</h2>
-          <ul className="space-y-2 text-white/70 leading-relaxed list-disc pr-6">
+    <PageShell title="قوانين المدينة" subtitle="اقرأها مرة... وبعدين لا تثق بأحد">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel>
+          <h2 className="mb-3 font-display text-3xl brass-text">الهدف</h2>
+          <ul className="space-y-2 pr-5 text-fog/90 [list-style:'—_'] marker:text-brass">
             <li>المواطنون يفوزون إذا طردوا كل المافيا.</li>
             <li>المافيا تفوز إذا صار عددها يساوي عدد الباقين أو أكثر.</li>
-            <li>المهرج يفوز وحده إذا طرده الشعب بالتصويت.</li>
+            <li>المهرّج يفوز وحده — وتنتهي اللعبة — إذا طرده الشعب.</li>
           </ul>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-black text-white mb-4">مراحل الجولة</h2>
-          <ol className="space-y-3">
-            {PHASES.map(([title, desc]) => (
-              <li key={title} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <span className="font-black text-[#cfb06f]">{title}</span>
-                <p className="text-white/60 mt-1">{desc}</p>
+          <h2 className="mb-3 mt-6 font-display text-3xl brass-text">مراحل الجولة</h2>
+          <ol className="space-y-2">
+            {PHASES.map(([t, d]) => (
+              <li key={t} className="rounded-lg border border-white/10 bg-black/30 p-3">
+                <p className="font-kufi text-brass-hi">{t}</p>
+                <p className="text-sm text-mist">{d}</p>
               </li>
             ))}
           </ol>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-black text-white mb-4">الأدوار</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {ROLES.map(r => (
-              <div key={r} className="bg-white/5 border border-white/10 rounded-xl p-4 flex gap-4">
-                <span className="text-4xl">{ROLE_INFO[r].icon}</span>
-                <div>
-                  <h3 className="font-black text-white">
-                    {ROLE_INFO[r].name}
-                    {ROLE_INFO[r].minPlayers > 0 && <span className="text-xs text-white/40 font-normal"> · من {ROLE_INFO[r].minPlayers} لاعبين</span>}
-                  </h3>
-                  <p className="text-white/60 text-sm leading-relaxed">{ROLE_INFO[r].description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        </Panel>
+        <Panel>
+          <h2 className="mb-3 font-display text-3xl brass-text">اللعب أونلاين</h2>
+          <ul className="space-y-2 pr-5 text-sm text-fog/90 [list-style:'—_']">
+            <li>من الرئيسية اختر &quot;أنشئ غرفة أونلاين&quot; وشارك الرمز أو الرابط مع أصحابك.</li>
+            <li>المضيف يحدد الأدوار والتوقيت، ويقدر يكمّل المقاعد ببوتات.</li>
+            <li>إذا انقطع اتصالك، افتح الصفحة من جديد وترجع لمقعدك تلقائياً.</li>
+            <li>كل لاعب يشوف فقط اللي يحق له يشوفه — حتى لو فتح أدوات المطوّر.</li>
+          </ul>
+          <h2 className="mb-3 mt-6 font-display text-3xl brass-text">نصائح</h2>
+          <ul className="space-y-2 pr-5 text-sm text-fog/90 [list-style:'—_']">
+            <li>البوتات تتأثر بكلامك: اذكر اسم لاعب مع كلمة &quot;مشبوه&quot; أو &quot;مافيا&quot; وراح يزيد شكّهم فيه.</li>
+            <li>المحقق البوت إذا لقى مافيا بيعلن عنه في النقاش.</li>
+            <li>انتبه للي يغيّر صوته آخر لحظة.</li>
+          </ul>
+        </Panel>
       </div>
-    </div>
+
+      <h2 className="mb-4 mt-10 text-center font-display text-4xl brass-text">الأدوار</h2>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {ALL_ROLES.map(r => (
+          <div key={r} className="flex flex-col gap-2">
+            <RoleCard role={r} compact />
+            <p className="text-xs leading-relaxed text-mist">
+              {ROLE_INFO[r].description}
+              {ROLE_INFO[r].minPlayers > 0 && <span className="text-brass/70"> (من {ROLE_INFO[r].minPlayers} لاعبين)</span>}
+            </p>
+          </div>
+        ))}
+      </div>
+    </PageShell>
   );
 }

@@ -1,63 +1,96 @@
 'use client';
 
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Coins, Ghost, ShieldCheck, Zap } from 'lucide-react';
-import GothicButton from '@/components/ui/GothicButton';
-import { useGameStore } from '@/store/useGameStore';
+import { Check, Gem, Lock } from 'lucide-react';
+import { SHOP, useProfile, type ShopItem } from '@/client/profile';
+import { useGame } from '@/client/game-store';
+import { sfx } from '@/client/audio';
+import { CardBack } from '@/components/cards';
+import { PageShell } from '@/components/page-shell';
+import { Button, Panel, cn } from '@/components/ui';
 
-const ITEMS = [
-  { id: 1, name: 'درع الحماية', price: 500, icon: ShieldCheck, desc: 'يحميك من أول محاولة طرد' },
-  { id: 2, name: 'رصاصة النخبة', price: 800, icon: Zap, desc: 'قدرة إضافية للمافيا' },
-  { id: 3, name: 'روح الظل', price: 1200, icon: Ghost, desc: 'تسمح لك بالتحدث 10 ثوانٍ بعد موتك' },
+const SECTIONS: { kind: ShopItem['kind']; title: string; hint: string }[] = [
+  { kind: 'back', title: 'ظهر البطاقات', hint: 'يظهر لك على كل البطاقات المقلوبة.' },
+  { kind: 'frame', title: 'إطار الصورة', hint: 'يشوفه كل اللاعبين حول الطاولة.' },
+  { kind: 'title', title: 'الألقاب', hint: 'يظهر تحت اسمك للجميع.' },
 ];
 
-export default function StorePage() {
-  const gems = useGameStore(s => s.profile.gems);
-  return (
-    <div className="min-h-dvh bg-[#0a0305] p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-wrap gap-6 justify-between items-center mb-16">
-          <Link href="/">
-            <GothicButton variant="secondary">العودة</GothicButton>
-          </Link>
-          <div className="text-center">
-            <h1 className="font-changa text-5xl font-black text-[#cfb06f] neon-text-gold">السوق السري</h1>
-            <p className="font-changa text-white/40 mt-2">اكسب الجواهر بالفوز في المباريات</p>
-          </div>
-          <div className="bg-black/60 border border-[#cfb06f]/30 p-4 rounded-xl flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-xs text-white/40 font-bold">رصيدك</p>
-              <p className="font-orbitron text-2xl font-black text-[#cfb06f]">{gems.toLocaleString('ar-SA')}</p>
-            </div>
-            <Coins className="w-8 h-8 text-[#cfb06f]" />
-          </div>
-        </div>
+const FRAME_PREVIEW: Record<string, string> = {
+  'frame-none': 'border-white/20',
+  'frame-gold': 'border-brass-hi shadow-[0_0_24px_6px_rgba(236,212,154,0.45)]',
+  'frame-blood': 'border-blood-hi shadow-[0_0_26px_8px_rgba(216,71,63,0.5)]',
+  'frame-smoke': 'border-[#9aa3ab] shadow-[0_0_30px_12px_rgba(180,190,200,0.35)]',
+};
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {ITEMS.map((item, i) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.15 }}
-              className="relative bg-[#1a0d0d] border-2 border-[#cfb06f]/20 rounded-3xl p-8 flex flex-col"
-            >
-              <item.icon className="w-14 h-14 text-[#cfb06f] mb-6" />
-              <h3 className="font-changa text-2xl font-black text-white mb-2">{item.name}</h3>
-              <p className="text-white/40 text-sm mb-8 leading-relaxed">{item.desc}</p>
-              <div className="flex justify-between items-center mt-auto">
-                <span className="flex items-center gap-2 font-orbitron text-xl font-bold text-[#cfb06f]">
-                  <Coins className="w-4 h-4" /> {item.price}
-                </span>
-                <GothicButton disabled title="قريباً">
-                  قريباً
-                </GothicButton>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+export default function StorePage() {
+  const p = useProfile();
+  const toast = useGame(s => s.toast);
+
+  const act = (item: ShopItem) => {
+    if (p.owned.includes(item.id)) {
+      p.equip(item.id);
+      sfx('click');
+      return;
+    }
+    const r = p.buy(item.id);
+    if (r.ok) {
+      sfx('notify');
+      toast(`اشتريت ${item.name} وتم تجهيزه ✨`);
+    } else {
+      sfx('error');
+      toast(r.error ?? 'تعذّر الشراء', 'error');
+    }
+  };
+
+  return (
+    <PageShell title="السوق السوداء" subtitle="الجواهر تكسبها بالفوز والإنجازات. كل شي هنا تجميلي — ما يعطيك أفضلية في اللعب.">
+      <div className="space-y-8">
+        {SECTIONS.map(sec => (
+          <section key={sec.kind}>
+            <div className="mb-3 flex items-baseline gap-3">
+              <h2 className="font-display text-3xl brass-text">{sec.title}</h2>
+              <span className="text-sm text-mist">{sec.hint}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {SHOP.filter(i => i.kind === sec.kind).map(item => {
+                const owned = p.owned.includes(item.id);
+                const equipped = p.equipped[item.kind] === item.id;
+                const affordable = p.gems >= item.price;
+                return (
+                  <Panel key={item.id} className={cn('flex flex-col items-center gap-3 p-4 text-center', equipped && 'ring-2 ring-brass')}>
+                    <div className="grid h-36 place-items-center">
+                      {item.kind === 'back' && <CardBack design={item.id} className="h-36 w-auto" />}
+                      {item.kind === 'frame' && <span className={cn('grid h-24 w-24 place-items-center rounded-full border-[3px] bg-ash text-5xl', FRAME_PREVIEW[item.id])}>{p.avatar}</span>}
+                      {item.kind === 'title' && (
+                        <span className="flex flex-col items-center">
+                          <span className="font-kufi text-fog">{p.name}</span>
+                          <span className="font-display text-2xl text-brass">{item.id === 'title-none' ? '—' : item.name}</span>
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-kufi text-fog">{item.name}</p>
+                      {item.description && <p className="text-xs text-mist">{item.description}</p>}
+                    </div>
+                    <Button variant={owned ? 'ghost' : 'brass'} className="mt-auto w-full py-2 text-sm" disabled={equipped || (!owned && !affordable)} onClick={() => act(item)}>
+                      {equipped ? (
+                        <>
+                          <Check className="h-4 w-4" /> مجهّز
+                        </>
+                      ) : owned ? (
+                        'تجهيز'
+                      ) : (
+                        <>
+                          {affordable ? <Gem className="h-4 w-4" /> : <Lock className="h-4 w-4" />} {item.price}
+                        </>
+                      )}
+                    </Button>
+                  </Panel>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </div>
-    </div>
+    </PageShell>
   );
 }

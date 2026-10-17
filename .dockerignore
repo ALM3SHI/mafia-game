@@ -1,0 +1,7 @@
+node_modules
+.next
+legacy_dir
+game_backend
+unity_scripts
+ai_poc
+.git

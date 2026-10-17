@@ -1,126 +1,122 @@
 @import "tailwindcss";
 
-/* next/font exposes the loaded families as --next-changa / --next-orbitron. */
-@theme inline {
-  --font-changa: var(--next-changa), sans-serif;
-  --font-orbitron: var(--next-orbitron), sans-serif;
+/* ── Noir Arabic design tokens ─────────────────────────────────────────── */
+@theme {
+  --color-ink: #0b0809;
+  --color-char: #141011;
+  --color-smoke: #1e1918;
+  --color-ash: #2b2421;
+  --color-fog: #e6dccb;
+  --color-mist: #a99f90;
+  --color-brass: #c9a45c;
+  --color-brass-hi: #ecd49a;
+  --color-brass-lo: #7d6331;
+  --color-blood: #a3201c;
+  --color-blood-hi: #d8473f;
+  --color-rain: #7b97ad;
+  --color-jade: #4f9a7a;
+
+  --font-display: 'Aref Ruqaa', 'Reem Kufi', serif;
+  --font-kufi: 'Reem Kufi', 'IBM Plex Sans Arabic', sans-serif;
+  --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+
+  --animate-flicker: flicker 6s infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-:root {
-  --background: #160709;
-  --foreground: #f3e8d4;
-  --neon-red: #b64f43;
-  --neon-gold: #cfb06f;
-  --neon-blue: #7f95a1;
-  --neon-green: #7f8f5f;
-  --neon-purple: #766078;
+@keyframes flicker {
+  0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.55; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
-html,
-body {
-  background-color: var(--background);
-  color: var(--foreground);
+html, body {
+  background: var(--color-ink);
+  color: var(--color-fog);
   min-height: 100dvh;
 }
-
 body {
-  font-family: var(--next-changa), sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
+::selection { background: var(--color-brass); color: var(--color-ink); }
 
-/* ── 3D helpers (Tailwind v4 has no perspective-2000 / transform-style-3d) ── */
-.perspective-1000 { perspective: 1000px; }
-.perspective-2000 { perspective: 2000px; }
-.perspective-3000 { perspective: 3000px; }
-.transform-style-3d { transform-style: preserve-3d; }
+/* Scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--color-brass-lo) transparent; }
 
-/* Subtle paper grain without hot-linking third-party textures. */
-.card-texture::after {
-  content: '';
-  position: absolute;
-  inset: 0;
+/* ── Atmosphere overlays ──────────────────────────────────────────────── */
+.film-grain {
   pointer-events: none;
-  opacity: 0.25;
-  mix-blend-mode: overlay;
-  background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 2px, transparent 2px 4px);
+  position: fixed;
+  inset: -50%;
+  z-index: 60;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation: grain 1.2s steps(6) infinite;
 }
-
-.neon-text-red { text-shadow: 0 0 10px var(--neon-red), 0 0 20px var(--neon-red); }
-.neon-text-gold { text-shadow: 0 0 10px var(--neon-gold), 0 0 20px var(--neon-gold); }
-
-/* ── CRT scanlines ── */
-.crt-overlay {
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -1%); }
+  80% { transform: translate(3%, 3%); }
+  100% { transform: translate(0, 0); }
+}
+.scanlines {
+  pointer-events: none;
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 59;
+  background: linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+  background-size: 100% 3px;
+  mix-blend-mode: multiply;
+}
+.vignette {
   pointer-events: none;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-  background-size: 100% 4px;
-  box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.9);
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  box-shadow: inset 0 0 220px 40px rgba(0, 0, 0, 0.85);
 }
 
-/* ── Landing-page arcade buttons (moved out of a broken <style jsx> @apply block) ── */
-.arcade-btn {
+/* ── Art-deco frame helpers ───────────────────────────────────────────── */
+.deco-panel {
   position: relative;
-  display: flex;
-  width: 100%;
-  height: 13rem;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 32px;
-  border: 4px solid;
-  background: #1a1c26;
-  box-shadow: 0 12px 0 #000, 0 20px 40px rgba(0, 0, 0, 0.6);
-  transition: transform 0.25s, box-shadow 0.25s, background 0.25s;
-  overflow: hidden;
-  outline: none;
+  background:
+    linear-gradient(180deg, rgba(30, 25, 24, 0.92), rgba(14, 11, 11, 0.95)) padding-box,
+    linear-gradient(135deg, var(--color-brass-hi), var(--color-brass-lo) 40%, var(--color-brass) 60%, var(--color-brass-lo)) border-box;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(236, 212, 154, 0.08);
 }
-.arcade-btn::before {
+.deco-panel::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(to top right, transparent, rgba(255, 255, 255, 0.05), transparent);
-  opacity: 0;
-  transition: opacity 0.5s;
+  inset: 6px;
+  border: 1px solid rgba(201, 164, 92, 0.18);
+  border-radius: 10px;
+  pointer-events: none;
 }
-.arcade-btn:hover { transform: translateY(-0.5rem); background: #242736; }
-.arcade-btn:hover::before { opacity: 1; }
-.arcade-btn:active { transform: translateY(0.5rem); box-shadow: none; transition-duration: 0.05s; }
-.arcade-btn:focus-visible { outline: 3px solid var(--neon-gold); outline-offset: 4px; }
-.arcade-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-
-.arcade-btn svg { width: 4rem; height: 4rem; margin-bottom: 1rem; color: white; opacity: 0.9; transition: transform 0.3s, filter 0.3s; }
-.arcade-btn:hover svg { transform: scale(1.1) rotate(3deg); filter: drop-shadow(0 0 15px white); }
-.arcade-btn span { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.1em; color: white; }
-.arcade-btn small { margin-top: 0.25rem; font-size: 0.7rem; color: rgba(255, 255, 255, 0.4); }
-
-.arcade-btn.small { height: 10rem; }
-.arcade-btn.small svg { width: 3rem; height: 3rem; margin-bottom: 0.5rem; }
-.arcade-btn.small span { font-size: 1.25rem; }
-
-.btn-create { border-color: #b64f43; box-shadow: 0 12px 0 #4f221d, 0 15px 40px rgba(182, 79, 67, 0.15); }
-.btn-join { border-color: #7f95a1; box-shadow: 0 12px 0 #44515b, 0 15px 40px rgba(127, 149, 161, 0.15); }
-.btn-deck { border-color: #766078; box-shadow: 0 8px 0 #433445; }
-.btn-store { border-color: #7f8f5f; box-shadow: 0 8px 0 #404b2e; }
-.btn-rules { border-color: #cfb06f; box-shadow: 0 8px 0 #6e5329; }
-
-/* ── Orientation warning: only for small portrait screens ── */
-.orientation-warning {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: black;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 2rem;
+.brass-text {
+  background: linear-gradient(180deg, #f6e3ad 0%, #c9a45c 45%, #8a6a2f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-@media (orientation: portrait) and (max-width: 900px) {
-  .orientation-warning { display: flex; }
+.brass-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-brass), transparent);
 }
+
+/* Night tint applied to the game scene */
+.night-tint { filter: saturate(0.6) hue-rotate(195deg) brightness(0.55); }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .film-grain { animation: none; }
 }

@@ -1,464 +1,110 @@
 <p align="center">
-  <img src="docs/images/hero_banner.png" alt="Mafia Game — AI-Powered Social Deduction" width="100%"/>
+  <img src="docs/images/hero_banner.png" alt="Mafia — مدينة لا تنام" width="100%"/>
 </p>
 
-<h1 align="center">🎭 Mafia Game</h1>
+<h1 align="center">🎩 المافيا — مدينة لا تنام</h1>
 
 <p align="center">
-  <b>Intelligent Multi-Agent Mafia Game system powered by LLMs</b><br>
-  <sub>Real-time voice AI · Sentence-level streaming · Voice cloning · Low-latency pipeline</sub>
-</p>
-
-<p align="center">
-  <a href="#-quick-start"><img src="https://img.shields.io/badge/Quick%20Start-▶-cfb06f?style=for-the-badge&labelColor=160709" alt="Quick Start"/></a>
-  <a href="#-architecture"><img src="https://img.shields.io/badge/Architecture-📐-7f95a1?style=for-the-badge&labelColor=160709" alt="Architecture"/></a>
-  <a href="#-tech-stack"><img src="https://img.shields.io/badge/Tech%20Stack-🔧-b64f43?style=for-the-badge&labelColor=160709" alt="Tech Stack"/></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-7f8f5f?style=for-the-badge&labelColor=160709" alt="License"/></a>
+  <b>An Arabic noir social-deduction game.</b><br>
+  Play against smart bots in your browser, or with friends online — with optional AI voice replies.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white" alt="Next.js"/>
+  <img src="https://img.shields.io/badge/Next.js-16-000?style=flat-square&logo=next.js" alt="Next.js"/>
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React"/>
-  <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI"/>
-  <img src="https://img.shields.io/badge/Unity-C%23-000000?style=flat-square&logo=unity&logoColor=white" alt="Unity"/>
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
-  <img src="https://img.shields.io/badge/Whisper-STT-FF6F00?style=flat-square" alt="Whisper"/>
-  <img src="https://img.shields.io/badge/Ollama-LLM-1a1a2e?style=flat-square" alt="Ollama"/>
+  <img src="https://img.shields.io/badge/WebSocket-ws-c9a45c?style=flat-square" alt="ws"/>
+  <img src="https://img.shields.io/badge/FastAPI-voice-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI"/>
 </p>
 
 ---
 
-## 📌 What is This?
-
-**Mafia Game** is a fully voice-driven AI social deduction game where human players interact with intelligent AI bots through natural speech — in **Arabic**. The system captures your voice, understands what you said, generates a contextually aware response in Saudi dialect, and speaks it back to you in a **cloned voice** — all in under 5 seconds.
-
-This is not a chatbot. This is a full-stack multiplayer game engine with:
-
-- 🎤 **Real-time voice pipeline** — speak naturally, hear AI bots respond in voice
-- 🧠 **Multi-agent LLM system** — each bot has its own role, strategy, and personality
-- 🔊 **Voice cloning** — bots speak in distinct cloned voices via Chatterbox Multilingual
-- ⚡ **Sentence-level streaming** — first audio chunk plays in ~3s, rest streams underneath
-- 🎮 **Dual-client architecture** — both web (Next.js) and 3D (Unity) clients supported
-
-<br>
-
-## 🏗 Architecture
-
-<p align="center">
-  <img src="docs/images/architecture.png" alt="System Architecture" width="100%"/>
-</p>
-
-### How It Works — The Complete Pipeline
-
-```
-  ┌──────────────┐         WebSocket          ┌──────────────────────┐
-  │  Unity 3D    │◄────── Audio Chunks ◄──────│                      │
-  │  Client      │─────── WAV Audio ─────────►│   FastAPI Backend    │
-  │              │                             │   (Orchestrator)     │
-  └──────────────┘                             │                      │
-                                               │  ┌────────────────┐ │
-  ┌──────────────┐         WebSocket          │  │  Whisper STT   │ │
-  │  Next.js     │◄────── Audio Chunks ◄──────│  │  (Arabic, ar)  │ │
-  │  Web Client  │─────── WebM Audio ─────────►│  └───────┬────────┘ │
-  │              │                             │          ▼          │
-  └──────────────┘                             │  ┌────────────────┐ │
-                                               │  │  Ollama LLM    │ │
-                                               │  │  (Streaming)   │ │
-                                               │  └───────┬────────┘ │
-                                               │          ▼          │
-                                               │  ┌────────────────┐ │
-                                               │  │  Chatterbox    │ │
-                                               │  │  MTL TTS       │ │
-                                               │  │  (Voice Clone) │ │
-                                               │  └───────┬────────┘ │
-                                               │          ▼          │
-                                               │  ┌────────────────┐ │
-                                               │  │  TTS Cache     │ │
-                                               │  │  (SHA-256 key) │ │
-                                               │  └────────────────┘ │
-                                               └──────────────────────┘
-```
-
-### Pipeline Stages
-
-| Stage | Component | Time | Description |
-|:---:|:---|:---:|:---|
-| 🎤 | **Audio Capture** | ~0.5s | Player speaks via mic (push-to-talk or auto) |
-| 📝 | **Whisper STT** | ~1.2s | Speech-to-text with Arabic tuning (beam=1, VAD filter) |
-| 🧠 | **Ollama LLM** | ~0.8s | Streaming token generation with game context injection |
-| 🔊 | **Chatterbox TTS** | ~2.1s | Voice-cloned speech synthesis per sentence |
-| 📡 | **WebSocket Stream** | ~0.1s | Audio chunk delivery to client |
-| | **Total (first audio)** | **~4.7s** | Cache hit: **< 50ms** ⚡ |
-
-<p align="center">
-  <img src="docs/images/pipeline_latency.png" alt="Pipeline Latency Breakdown" width="100%"/>
-</p>
-
-> **💡 Key Insight:** The LLM response is split into sentences and each sentence is synthesized independently. The first audio chunk plays in ~3-5 seconds. By the time it finishes playing, subsequent chunks have already been generated — creating the perception of near-instant response.
-
-<br>
-
-## ✨ Key Features
-
-<table>
-<tr>
-<td width="50%">
-
-### 🎭 Intelligent AI Agents
-- Dynamic system prompts with live game state
-- Role-aware behavior (Mafia, Citizen, Doctor, Police...)
-- Saudi Arabic dialect ("لهجة سعودية بيضاء")
-- Short, provocative, in-character responses
-
-</td>
-<td width="50%">
-
-### ⚡ Real-Time Voice Pipeline
-- Sentence-level streaming (not wait-for-all)
-- Sub-5s time-to-first-audio
-- Disk-backed TTS cache (SHA-256 keyed)
-- GPU → CPU graceful fallback
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 🔊 Voice Cloning
-- Chatterbox Multilingual TTS engine
-- Clone any voice from a 5-second sample
-- Per-bot unique voice identity
-- Gradio studio integration with VRAM preloading
-
-</td>
-<td>
-
-### 🎮 Full Game Engine
-- Pure, unit-tested rules engine (`src/lib/game-logic.ts`)
-- Round flow: reveal → night → morning → testimony → discussion → voting
-- Roles: Mafia, Citizen, Doctor, Detective, Mayor, Jester
-- Bots that chat, vote and act at night; mafia bots follow a human mafia's pick
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 🌐 Dual-Client Architecture
-- **Next.js 16** web client (React 19, TypeScript)
-- **Unity C#** 3D client with Photon Voice
-- Same backend, same WebSocket protocol
-- Arabic RTL layout with gothic arcade UI
-
-</td>
-<td>
-
-### 🛡️ Robust Backend
-- Optional API key (Bearer header or `?token=` for browsers)
-- Malformed frames never drop the connection
-- Voice reference paths sandboxed to the data dir
-- Health check + per-turn timing telemetry
-
-</td>
-</tr>
-</table>
-
-<br>
-
-## 🔧 Tech Stack
-
-### AI / ML Pipeline
-| Component | Technology | Purpose |
-|:---|:---|:---|
-| Speech-to-Text | **Faster Whisper** (small model) | Arabic transcription with VAD |
-| Language Model | **Ollama** (Qwen 2.5 / Aya) | Streaming conversational AI |
-| Text-to-Speech | **Chatterbox Multilingual** | Arabic voice cloning & synthesis |
-| TTS Interface | **Gradio Client** | Remote GPU inference bridge |
-
-### Frontend
-| Component | Technology | Purpose |
-|:---|:---|:---|
-| Framework | **Next.js 16** | App Router, RSC |
-| UI Library | **React 19** | Component architecture |
-| Language | **TypeScript 5** | Type safety |
-| Styling | **Tailwind CSS 4** | Dark gothic arcade theme |
-| Animation | **Framer Motion 12** | Smooth micro-animations |
-| State | **Zustand 5** | Game state management |
-| Icons | **Lucide React** | UI iconography |
-
-### Backend
-| Component | Technology | Purpose |
-|:---|:---|:---|
-| Framework | **FastAPI** | Async WebSocket server |
-| Server | **Uvicorn** | ASGI production server |
-| Protocol | **WebSocket** | Bidirectional audio streaming |
-
-### Unity Client
-| Component | Technology | Purpose |
-|:---|:---|:---|
-| Engine | **Unity (C#)** | 3D game client |
-| Networking | **NativeWebSocket** | WebSocket bridge to backend |
-| Multiplayer | **Photon Voice** | Real-time voice relay |
-| Audio | **Custom WAV Utility** | PCM16/Float32 encode/decode |
-| Visuals | **RMS Lip Sync** | Amplitude-driven mouth animation |
-
-<br>
-
-## 📁 Project Structure
-
-```
-mafia-game/
-│
-├── 📱 src/                          # Next.js Web Client
-│   ├── app/
-│   │   ├── page.tsx                 # Landing page (arcade UI)
-│   │   ├── lobby/page.tsx           # Game lobby & setup
-│   │   ├── game/page.tsx            # Main gameplay screen
-│   │   ├── store/page.tsx           # In-game store
-│   │   ├── layout.tsx               # RTL Arabic layout + fonts
-│   │   └── globals.css              # Design system & tokens
-│   ├── components/
-│   │   ├── game/                    # Card, PhaseBadge
-│   │   ├── shared/                  # Chat, CRTOverlay
-│   │   └── ui/                      # GothicButton
-│   ├── hooks/
-│   │   ├── useVoiceSocket.ts        # WebSocket voice bridge
-│   │   └── useSound.ts             # SFX manager
-│   ├── store/
-│   │   └── useGameStore.ts          # Zustand game state machine
-│   └── lib/
-│       ├── game-logic.ts            # Pure rules engine (roles, night, votes, wins)
-│       ├── game-types.ts            # Shared types
-│       ├── roles.ts                 # Role metadata (Arabic names, descriptions)
-│       └── __tests__/               # Vitest unit tests
-│
-├── 🧠 game_backend/                 # FastAPI AI Backend
-│   ├── main.py                      # Orchestrator (STT→LLM→TTS pipeline)
-│   ├── config.py                    # Centralized env-based configuration
-│   ├── tts_cache.py                 # Disk-backed TTS cache (SHA-256)
-│   ├── test_latency.py              # Pipeline benchmark tool
-│   ├── .env.example                 # Environment template
-│   ├── requirements.txt             # Python dependencies
-│   ├── scripts/
-│   │   ├── prepare_voice_sample.py  # Audio format conversion
-│   │   └── make_test_clip.py        # Test clip generator
-│   └── data/
-│       ├── clones/                  # Voice clone references
-│       └── tts_cache/               # Cached TTS output
-│
-├── 🎮 unity_scripts/                # Unity 3D Client Scripts
-│   ├── AIBridgeClient.cs            # WebSocket bridge (singleton)
-│   ├── AudioPlaybackQueue.cs        # Gapless sentence queue
-│   ├── MicRecorder.cs               # Push-to-talk recorder
-│   ├── LipSync.cs                   # Amplitude-driven lip sync
-│   └── WavUtility.cs                # WAV encode/decode
-│
-├── 🧪 ai_poc/                       # Initial Proof of Concept
-│   ├── poc.py                       # CLI pipeline prototype
-│   └── requirements.txt             # POC dependencies
-│
-├── 🎨 public/                       # Static Assets
-│   ├── cards/                       # Role card artwork
-│   ├── ui/                          # Background images
-│   └── sounds/                      # 18 game SFX files
-│
-└── 📄 Configuration
-    ├── package.json                 # Node.js dependencies
-    ├── next.config.ts               # Next.js optimization config
-    ├── tsconfig.json                # TypeScript config
-    └── .gitignore                   # Comprehensive ignore rules
-```
-
-<br>
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-| Requirement | Version | Purpose |
-|:---|:---|:---|
-| **Node.js** | 18+ | Next.js web client |
-| **Python** | 3.10+ | AI backend |
-| **Ollama** | Latest | Local LLM inference |
-| **GPU** (recommended) | NVIDIA RTX 3050+ | TTS voice synthesis |
-
-### 1️⃣ Clone the Repository
+## ⚡ التشغيل السريع
 
 ```bash
-git clone https://github.com/ALM3SHI/mafia-game.git
-cd mafia-game
-```
-
-### 2️⃣ Start the AI Backend
-
-```bash
-# Navigate to the backend
-cd game_backend
-
-# Create virtual environment
-python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # macOS/Linux
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your settings (Ollama URL, TTS studio URL, etc.)
-
-# Start the server
-python main.py
-```
-
-> The backend will start on `http://0.0.0.0:8000` with WebSocket endpoints at `/ws/audio` and `/ws/clone`.
-
-### 3️⃣ Start Ollama (LLM)
-
-```bash
-# Pull the Arabic-capable model
-ollama pull aya
-
-# Ollama should be running on port 11434
-ollama serve
-```
-
-### 4️⃣ Start the Web Client
-
-```bash
-# From the project root
 npm install
-cp .env.example .env.local     # optional: point at a remote voice backend
 npm run dev
 ```
 
-The game is fully playable without the voice backend — bots still chat, vote
-and act; only the push-to-talk replies need it.
+- افتح **http://localhost:3000** — "العب الآن ضد البوتات" يشتغل فوراً.
+- `npm run dev` يشغّل الموقع **و** سيرفر اللعب الأونلاين (المنفذ 3002) مع بعض.
+- للعب مع أصحابك على نفس الشبكة: خلهم يفتحون رابط **Network** اللي يطلع في الطرفية (مثل `http://192.168.1.20:3000`). أول مرة قد يسألك ويندوز عن الجدار الناري — اسمح له.
 
-> Open [http://localhost:3000](http://localhost:3000) to see the game UI.
+## ✨ What's in the box
 
-### 5️⃣ (Optional) TTS Voice Cloning
+| | |
+|:--|:--|
+| 🃏 **9 roles** | Mafia, Godfather (reads innocent, decides the kill), Citizen, Doctor (no same target twice), Detective, Bodyguard (dies in your place), Vigilante (one bullet), Mayor (double vote), Jester (wins if lynched) |
+| 🌐 **Online multiplayer** | Room codes + share links, host controls (roles, timers, kick, fill with bots), reconnect after a refresh, server-authoritative — each client only receives what that player may know |
+| 🤖 **Bots that think** | Per-bot suspicion that reacts to accusations in chat, voting patterns, lynch results and detective findings. Detective bots announce mafia they find; mafia bots coordinate and frame their accusers |
+| 💬 **Three chat channels** | Public table chat (only the speaker talks during testimony), a private mafia channel at night, and a channel for the dead |
+| 🎨 **Noir Arabic art direction** | Aref Ruqaa / Reem Kufi / IBM Plex Arabic (self-hosted), rain, film grain, the city newspaper, role cards with art-deco medallions |
+| 🎵 **Generated ambience** | WebAudio rain + a minor-key noir pad that shifts between day, night and the vote — no music files |
+| 🏆 **Progression** | Stats per role, 12 achievements, match history, gems, and a cosmetic store (card backs, avatar frames, titles) — saved in the browser |
+| 🎙️ **AI voice (optional)** | In bot games, hold to talk; Whisper → LLM → cloned TTS answers as a bot (see `game_backend/`) |
+| 📱 **Responsive** | Works on phones in portrait |
 
-To enable voice cloning, you need the [Chatterbox Multilingual TTS](https://github.com/resemble-ai/chatterbox) studio running:
+## 🏗 Architecture
 
-```bash
-# The TTS studio should be accessible at http://127.0.0.1:7860/
-# Configure in game_backend/.env:
-TTS_BASE_URL=http://127.0.0.1:7860/
-TTS_DEFAULT_REF_AUDIO=voice_sample.wav
+```
+src/game/          Pure TypeScript — no React, shared by browser and server
+  rules.ts         Deck, votes, night resolution, win conditions
+  bots.ts          Bot memory, suspicion, decisions, dialogue
+  room.ts          Room: the authoritative state machine (phases, timers,
+                   chat channels, bots) + viewFor(playerId) per-player views
+  protocol.ts      Client ⇄ server messages
+server/index.ts    Node WebSocket server hosting many Rooms (npm run server)
+src/client/        Transports (local Room in the tab / online socket),
+                   game store, profile (localStorage), audio
+src/components/    UI — play/ (Lobby, Table, Seat, ChatBox, GameOver)
+src/app/           Pages: / · /play · /profile · /store · /rules
+game_backend/      Optional FastAPI voice pipeline (Whisper → Ollama → TTS)
 ```
 
-<br>
+A local game and an online game run **the same `Room` class** — locally it
+ticks in your tab, online it ticks on the server. The UI only ever renders a
+`PlayerView`, so hidden roles never reach the wrong browser.
 
-## ⚙️ Configuration
+Round flow: `lobby → reveal → night → morning → testimony → discussion → voting → verdict → night …`
 
-All configuration is managed through environment variables for cloud portability. See [`game_backend/.env.example`](game_backend/.env.example) for the complete reference.
-
-### Key Settings
-
-| Variable | Default | Description |
-|:---|:---|:---|
-| `OLLAMA_MODEL` | `aya` | LLM model for game dialogue |
-| `WHISPER_MODEL` | `small` | STT model size (tiny/base/small/medium/large-v3) |
-| `WHISPER_DEVICE` | `cpu` | STT device (`cpu` or `cuda`) |
-| `TTS_ENGINE` | `Chatterbox Multilingual` | Voice synthesis engine |
-| `TTS_LANGUAGE` | `ar` | TTS language code |
-| `MAFIA_API_KEY` | *(empty)* | Bearer token for auth |
-
-<br>
-
-## 🧪 Tests
+## 🧪 Quality
 
 ```bash
-npm test                 # rules engine + store flow (Vitest)
-npm run lint && npm run typecheck
+npm test           # rules + room state machine (36 tests, incl. 12 full simulated games)
+npm run lint
+npm run typecheck
+npm run build
 
+cd game_backend && python -m pytest tests   # voice backend protocol tests
+```
+
+## 🚀 Deploying online
+
+The web app and the game server are separate processes:
+
+1. **Game server** — any Node host with WebSockets (Render, Fly.io, Railway, a VPS):
+   `npm ci && npm run server` (uses `PORT`, default 3002). Health check: `/health`.
+2. **Web app** — Vercel or any Next.js host, with
+   `NEXT_PUBLIC_GAME_SERVER_URL=wss://your-server-host`.
+
+Or run both in one container: `docker build -t mafia . && docker run -p 3000:3000 -p 3002:3002 mafia`.
+
+## 🎙️ Optional: AI voice backend
+
+```bash
 cd game_backend
-pip install pytest httpx
-python -m pytest tests   # WebSocket protocol, auth, path sandboxing (ML deps stubbed)
+python -m venv venv && venv\Scripts\activate     # Windows
+pip install -r requirements.txt
+cp .env.example .env
+python main.py                                   # ws://localhost:8000/ws/audio
 ```
 
-## ⏱️ Performance Testing
-
-The project includes a built-in latency benchmark:
-
-```bash
-cd game_backend
-python test_latency.py --runs 5 --audio voice_sample_5s.wav
-```
-
-This measures:
-- **TTFA** (Time-to-First-Audio) — the critical UX metric
-- Per-stage breakdown: STT, LLM, TTS generation
-- Cache hit rates
-- p50/p95/min/max statistics
-
-<br>
-
-## 🎮 Game Features
-
-### Roles System
-| Role | Team | Ability |
-|:---:|:---|:---|
-| 🔫 **Mafia** | Mafia | Agree on one kill each night (max ⅓ of the table) |
-| 👤 **Citizen** | Town | Discuss and vote |
-| 💉 **Doctor** | Town | Protect one player (or self) each night — 5+ players |
-| 🔍 **Detective** | Town | Learn whether one player is mafia each night — 5+ players |
-| 👑 **Mayor** | Town | Day vote counts double — 6+ players |
-| 🃏 **Jester** | Neutral | Wins alone if voted out — 7+ players |
-
-Votes: majority eliminates; a tie, or "skip" having the most votes, eliminates nobody.
-Town wins when all mafia are gone; mafia wins once they are at least half of the living.
-
-### Game Phases
-```
-lobby → reveal → night → morning → testimony → discussion → voting ─┐
-                   ↑                                                │
-                   └────────────────────────────────────────────────┘
-```
-
-<br>
-
-## 🗺️ Roadmap
-
-- [x] Core voice pipeline (STT → LLM → TTS)
-- [x] Sentence-level streaming
-- [x] Voice cloning integration
-- [x] TTS disk caching
-- [x] Next.js web client with full game UI
-- [x] Unity C# client bridge
-- [x] Zustand game state machine + tested rules engine
-- [x] Performance benchmarking tool
-- [ ] Multiplayer via Supabase Realtime
-- [ ] Cloud GPU deployment (RunPod/Modal)
-- [ ] Mobile-responsive web UI
-- [ ] Additional LLM models & personalities
-- [ ] Spectator mode with live audio
-
-<br>
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-<br>
+Then in the game: ⚙️ Settings → "ردود صوتية بالذكاء الاصطناعي". Requires
+[Ollama](https://ollama.com) and, for cloned voices, the Chatterbox TTS studio
+(see `game_backend/.env.example`).
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
 
-<br>
-
----
-
-<p align="center">
-  <sub>Built with ❤️ and ☕ by <a href="https://github.com/ALM3SHI">@ALM3SHI</a></sub><br>
-  <sub>المافيا لا تنام 🎭</sub>
-</p>
+<p align="center"><sub>Built by <a href="https://github.com/ALM3SHI">@ALM3SHI</a> · المافيا لا تنام 🎭</sub></p>
